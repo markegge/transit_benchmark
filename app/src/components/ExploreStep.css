@@ -155,19 +155,6 @@
   background: #059669;
 }
 
-.chart-legend-note {
-  text-align: center;
-  margin-top: 0.75rem;
-  font-size: 0.75rem;
-  color: #64748b;
-}
-
-.home-indicator {
-  color: #dc2626;
-  font-size: 1rem;
-  margin-right: 0.25rem;
-}
-
 .summary-table-container {
   overflow-x: auto;
 }

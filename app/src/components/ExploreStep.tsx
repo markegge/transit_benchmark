@@ -161,8 +161,15 @@ export function ExploreStep({
     URL.revokeObjectURL(url);
   };
 
-  const truncateName = (name: string) =>
-    name.length > 25 ? name.slice(0, 25) + '...' : name;
+  const truncateName = (name: string, maxLen = 35) =>
+    name.length > maxLen ? name.slice(0, maxLen) + '...' : name;
+
+  // Custom legend formatter that bolds the home agency
+  const renderLegendText = (value: string) => {
+    const isHome = value === homeAgency.agency;
+    const displayName = truncateName(value);
+    return isHome ? <strong>{displayName}</strong> : displayName;
+  };
 
   const metricLabel = METRICS.find((m) => m.key === selectedMetric)?.label || selectedMetric;
 
@@ -213,9 +220,12 @@ export function ExploreStep({
               <XAxis dataKey="year" />
               <YAxis tickFormatter={(val) => formatMetricValue(val, selectedMetric)} />
               <Tooltip
-                formatter={(value) => [formatMetricValue(Number(value), selectedMetric), '']}
+                formatter={(value, name) => [
+                  formatMetricValue(Number(value), selectedMetric),
+                  truncateName(String(name), 40),
+                ]}
               />
-              <Legend formatter={truncateName} />
+              <Legend formatter={renderLegendText} />
               {allAgencies.map((agency, index) => {
                 const isHome = agency.ntd_id === homeAgency.ntd_id;
                 return (
@@ -232,9 +242,6 @@ export function ExploreStep({
               })}
             </LineChart>
           </ResponsiveContainer>
-          <div className="chart-legend-note">
-            <span className="home-indicator">●</span> Home agency line is thicker
-          </div>
         </div>
 
         {/* Latest Year Comparison Bar Chart */}
