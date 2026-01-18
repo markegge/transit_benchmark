@@ -6,6 +6,71 @@ from pathlib import Path
 import pandas as pd
 
 
+def impute_population(df: pd.DataFrame) -> pd.DataFrame:
+    """Impute missing population data using available values from other years.
+
+    For agencies with population data in some years but not others (especially
+    2022-2024 having data while 2019-2021 has zeros/nulls), fill in missing
+    values using the nearest available non-zero population.
+
+    Args:
+        df: DataFrame with ntd_id, report_year, and primary_uza_population columns.
+
+    Returns:
+        DataFrame with imputed population values.
+    """
+    df = df.copy()
+
+    # Track stats for logging
+    before_missing = (df["primary_uza_population"].isna() | (df["primary_uza_population"] == 0)).sum()
+
+    # Build a lookup of non-zero population by agency and year
+    pop_lookup = (
+        df[df["primary_uza_population"] > 0]
+        .groupby("ntd_id")
+        .apply(
+            lambda g: dict(zip(g["report_year"], g["primary_uza_population"])),
+            include_groups=False
+        )
+        .to_dict()
+    )
+
+    def get_imputed_population(row):
+        """Get population for a row, imputing if necessary."""
+        current_pop = row["primary_uza_population"]
+        ntd_id = row["ntd_id"]
+        year = row["report_year"]
+
+        # If we already have a valid population, keep it
+        if pd.notna(current_pop) and current_pop > 0:
+            return current_pop
+
+        # Check if this agency has any population data
+        if ntd_id not in pop_lookup or not pop_lookup[ntd_id]:
+            return None  # No data available for this agency
+
+        available_years = pop_lookup[ntd_id]
+
+        # Prefer later years (2022-2024 have better data), then earlier years
+        # Sort by: later years first, then by distance from current year
+        sorted_years = sorted(
+            available_years.keys(),
+            key=lambda y: (-y, abs(y - year))  # Prefer later years, then closest
+        )
+
+        # Use the first available (best) year's population
+        return available_years[sorted_years[0]]
+
+    # Apply imputation
+    df["primary_uza_population"] = df.apply(get_imputed_population, axis=1)
+
+    after_missing = (df["primary_uza_population"].isna() | (df["primary_uza_population"] == 0)).sum()
+    print(f"Population imputation: {before_missing - after_missing} values filled "
+          f"({before_missing} missing before, {after_missing} after)")
+
+    return df
+
+
 def normalize_ntd_id(ntd_id, year: int):
     """Normalize NTD ID - for 2019-2021, use last 5 characters if longer than 5."""
     ntd_str = str(ntd_id)
@@ -119,6 +184,10 @@ def main():
                 .str.strip(),
                 errors="coerce"
             )
+
+    # Impute missing population data from other years
+    # Many agencies have population in 2022-2024 but zero/null in 2019-2021
+    combined = impute_population(combined)
 
     # Create output directory
     output_dir = Path("app/public/data")
