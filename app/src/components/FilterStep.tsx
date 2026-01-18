@@ -1,31 +1,122 @@
-import { useState, useMemo } from 'react';
-import type { Agency, Metadata, Filters, RangeFilter } from '../types';
-import { formatNumber } from '../data';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import type { Agency, Metadata, Filters, SimilarityCriterion } from '../types';
+import { formatNumber, formatCurrency } from '../data';
 import './FilterStep.css';
 
 interface Props {
   agencies: Agency[];
   metadata: Metadata;
-  onSelectAgencies: (agencies: Agency[]) => void;
+  onSelectAgencies: (homeAgency: Agency, peers: Agency[]) => void;
 }
 
 const INITIAL_FILTERS: Filters = {
-  states: [],
-  organizationTypes: [],
   reporterTypes: [],
   modes: [],
-  ridershipRange: null,
-  populationRange: null,
+  states: [],
   searchQuery: '',
 };
 
-export function FilterStep({ agencies, metadata, onSelectAgencies }: Props) {
-  const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+const SIMILARITY_CRITERIA: { key: SimilarityCriterion; label: string }[] = [
+  { key: 'population', label: 'Population' },
+  { key: 'ridership', label: 'Annual Ridership' },
+  { key: 'fare_per_trip', label: 'Fare per Trip' },
+  { key: 'cost_per_trip', label: 'Cost per Passenger' },
+  { key: 'operating_expenses', label: 'Total Operating Expenses' },
+  { key: 'vehicle_revenue_hours', label: 'Vehicle Revenue Hours' },
+  { key: 'vehicle_revenue_miles', label: 'Vehicle Revenue Miles' },
+];
 
-  // Apply filters to get filtered agencies
+// Get raw value for a criterion
+function getCriterionValue(agency: Agency, criterion: SimilarityCriterion): number {
+  switch (criterion) {
+    case 'population':
+      return agency.primary_uza_population ?? 0;
+    case 'ridership':
+      return agency.unlinked_passenger_trips;
+    case 'fare_per_trip':
+      return agency.fare_per_trip ?? 0;
+    case 'cost_per_trip':
+      return agency.cost_per_trip ?? 0;
+    case 'operating_expenses':
+      return agency.total_operating_expenses;
+    case 'vehicle_revenue_hours':
+      return agency.vehicle_revenue_hours;
+    case 'vehicle_revenue_miles':
+      return agency.vehicle_revenue_miles;
+  }
+}
+
+// Log transform and normalize values to 0-1 scale
+function normalizeValues(values: number[]): number[] {
+  // Log transform (add 1 to handle zeros)
+  const logValues = values.map((v) => Math.log(v + 1));
+  const min = Math.min(...logValues);
+  const max = Math.max(...logValues);
+  const range = max - min || 1;
+  return logValues.map((v) => (v - min) / range);
+}
+
+// Calculate similarity score (lower = more similar)
+function calculateSimilarity(
+  homeAgency: Agency,
+  otherAgency: Agency,
+  criteria: SimilarityCriterion[],
+  normalizedValues: Map<SimilarityCriterion, Map<number, number>>
+): number {
+  if (criteria.length === 0) return 0;
+
+  let totalDiff = 0;
+  for (const criterion of criteria) {
+    const homeNorm = normalizedValues.get(criterion)?.get(homeAgency.ntd_id) ?? 0;
+    const otherNorm = normalizedValues.get(criterion)?.get(otherAgency.ntd_id) ?? 0;
+    totalDiff += Math.abs(homeNorm - otherNorm);
+  }
+  return totalDiff;
+}
+
+export function FilterStep({ agencies, metadata, onSelectAgencies }: Props) {
+  const [homeAgency, setHomeAgency] = useState<Agency | null>(null);
+  const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
+  const [selectedCriteria, setSelectedCriteria] = useState<SimilarityCriterion[]>([
+    'population',
+    'ridership',
+  ]);
+  const [selectedPeerIds, setSelectedPeerIds] = useState<Set<number>>(new Set());
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [agencySearch, setAgencySearch] = useState('');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Filter agencies for home agency dropdown
+  const filteredDropdownAgencies = useMemo(() => {
+    if (!agencySearch) return agencies.slice(0, 50);
+    const query = agencySearch.toLowerCase();
+    return agencies
+      .filter(
+        (a) =>
+          a.agency.toLowerCase().includes(query) ||
+          a.city.toLowerCase().includes(query) ||
+          a.state.toLowerCase().includes(query)
+      )
+      .slice(0, 50);
+  }, [agencies, agencySearch]);
+
+  // Apply filters to get potential peers
   const filteredAgencies = useMemo(() => {
     return agencies.filter((agency) => {
+      // Exclude home agency from peers
+      if (homeAgency && agency.ntd_id === homeAgency.ntd_id) return false;
+
       // Search query filter
       if (filters.searchQuery) {
         const query = filters.searchQuery.toLowerCase();
@@ -36,71 +127,53 @@ export function FilterStep({ agencies, metadata, onSelectAgencies }: Props) {
         if (!matchesSearch) return false;
       }
 
-      // State filter
+      // Reporter type filter (matches ANY)
+      if (filters.reporterTypes.length > 0 && !filters.reporterTypes.includes(agency.reporter_type)) {
+        return false;
+      }
+
+      // Mode filter - agency must operate ALL selected modes
+      if (filters.modes.length > 0) {
+        const hasAllModes = filters.modes.every((m) => agency.modes.includes(m));
+        if (!hasAllModes) return false;
+      }
+
+      // State filter (matches ANY)
       if (filters.states.length > 0 && !filters.states.includes(agency.state)) {
         return false;
       }
 
-      // Organization type filter
-      if (
-        filters.organizationTypes.length > 0 &&
-        !filters.organizationTypes.includes(agency.organization_type)
-      ) {
-        return false;
-      }
-
-      // Reporter type filter
-      if (
-        filters.reporterTypes.length > 0 &&
-        !filters.reporterTypes.includes(agency.reporter_type)
-      ) {
-        return false;
-      }
-
-      // Mode filter - agency must operate at least one selected mode
-      if (filters.modes.length > 0) {
-        const hasMode = filters.modes.some((m) => agency.modes.includes(m));
-        if (!hasMode) return false;
-      }
-
-      // Ridership range filter
-      if (filters.ridershipRange) {
-        const { min, max } = filters.ridershipRange;
-        const ridership = agency.unlinked_passenger_trips;
-        if (ridership < min) return false;
-        if (max !== null && ridership >= max) return false;
-      }
-
-      // Population range filter
-      if (filters.populationRange) {
-        const { min, max } = filters.populationRange;
-        const pop = agency.primary_uza_population;
-        if (pop === null) return false;
-        if (pop < min) return false;
-        if (max !== null && pop >= max) return false;
-      }
-
       return true;
     });
-  }, [agencies, filters]);
+  }, [agencies, homeAgency, filters]);
 
-  const toggleState = (state: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      states: prev.states.includes(state)
-        ? prev.states.filter((s) => s !== state)
-        : [...prev.states, state],
-    }));
-  };
+  // Pre-compute normalized values for all criteria
+  const normalizedValues = useMemo(() => {
+    const result = new Map<SimilarityCriterion, Map<number, number>>();
 
-  const toggleOrgType = (type: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      organizationTypes: prev.organizationTypes.includes(type)
-        ? prev.organizationTypes.filter((t) => t !== type)
-        : [...prev.organizationTypes, type],
-    }));
-  };
+    for (const { key } of SIMILARITY_CRITERIA) {
+      const values = agencies.map((a) => getCriterionValue(a, key));
+      const normalized = normalizeValues(values);
+      const valueMap = new Map<number, number>();
+      agencies.forEach((a, i) => valueMap.set(a.ntd_id, normalized[i]));
+      result.set(key, valueMap);
+    }
+
+    return result;
+  }, [agencies]);
+
+  // Calculate similarity and sort agencies
+  const rankedAgencies = useMemo(() => {
+    if (!homeAgency) return filteredAgencies;
+
+    return [...filteredAgencies]
+      .map((agency) => ({
+        agency,
+        similarity: calculateSimilarity(homeAgency, agency, selectedCriteria, normalizedValues),
+      }))
+      .sort((a, b) => a.similarity - b.similarity)
+      .map((item) => item.agency);
+  }, [filteredAgencies, homeAgency, selectedCriteria, normalizedValues]);
 
   const toggleReporterType = (type: string) => {
     setFilters((prev) => ({
@@ -120,37 +193,43 @@ export function FilterStep({ agencies, metadata, onSelectAgencies }: Props) {
     }));
   };
 
-  const setRidershipRange = (range: RangeFilter | null) => {
-    setFilters((prev) => ({ ...prev, ridershipRange: range }));
+  const toggleState = (state: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      states: prev.states.includes(state)
+        ? prev.states.filter((s) => s !== state)
+        : [...prev.states, state],
+    }));
   };
 
-  const setPopulationRange = (range: RangeFilter | null) => {
-    setFilters((prev) => ({ ...prev, populationRange: range }));
+  const toggleCriterion = (criterion: SimilarityCriterion) => {
+    setSelectedCriteria((prev) =>
+      prev.includes(criterion)
+        ? prev.filter((c) => c !== criterion)
+        : [...prev, criterion]
+    );
   };
 
-  const toggleAgencySelection = (ntdId: number) => {
-    setSelectedIds((prev) => {
+  const togglePeerSelection = (ntdId: number) => {
+    setSelectedPeerIds((prev) => {
       const next = new Set(prev);
       if (next.has(ntdId)) {
         next.delete(ntdId);
-      } else if (next.size < 20) {
+      } else if (next.size < 19) {
+        // Max 19 peers (+ 1 home = 20 total)
         next.add(ntdId);
       }
       return next;
     });
   };
 
-  const selectAllVisible = () => {
-    const toAdd = filteredAgencies.slice(0, 20 - selectedIds.size);
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      toAdd.forEach((a) => next.add(a.ntd_id));
-      return next;
-    });
+  const selectTopN = (n: number) => {
+    const toSelect = rankedAgencies.slice(0, n).map((a) => a.ntd_id);
+    setSelectedPeerIds(new Set(toSelect));
   };
 
   const clearSelection = () => {
-    setSelectedIds(new Set());
+    setSelectedPeerIds(new Set());
   };
 
   const clearFilters = () => {
@@ -158,233 +237,250 @@ export function FilterStep({ agencies, metadata, onSelectAgencies }: Props) {
   };
 
   const handleProceed = () => {
-    const selected = agencies.filter((a) => selectedIds.has(a.ntd_id));
-    onSelectAgencies(selected);
+    if (!homeAgency) return;
+    const peers = agencies.filter((a) => selectedPeerIds.has(a.ntd_id));
+    onSelectAgencies(homeAgency, peers);
   };
 
-  const selectedAgencies = agencies.filter((a) => selectedIds.has(a.ntd_id));
+  const formatCriterionValue = (agency: Agency, criterion: SimilarityCriterion): string => {
+    const value = getCriterionValue(agency, criterion);
+    switch (criterion) {
+      case 'fare_per_trip':
+      case 'cost_per_trip':
+      case 'operating_expenses':
+        return formatCurrency(value);
+      default:
+        return formatNumber(value);
+    }
+  };
 
   return (
     <div className="filter-step">
       <div className="filter-header">
-        <h2>Step 1: Select Agencies to Analyze</h2>
-        <p>
-          Use the filters below to narrow down agencies, then select up to 20 for detailed analysis.
-        </p>
+        <h2>Step 1: Select Your Agency and Peers</h2>
+        <p>First select your home agency, then use filters and similarity criteria to find peer agencies.</p>
       </div>
 
-      <div className="filter-layout">
-        {/* Filter Panel */}
-        <div className="filter-panel">
-          <div className="filter-section">
-            <label>Search</label>
-            <input
-              type="text"
-              placeholder="Search by name, city, or metro area..."
-              value={filters.searchQuery}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))
-              }
-            />
-          </div>
-
-          <div className="filter-section">
-            <label>States</label>
-            <div className="filter-chips scrollable">
-              {metadata.states.map((state) => (
-                <button
-                  key={state}
-                  className={filters.states.includes(state) ? 'active' : ''}
-                  onClick={() => toggleState(state)}
+      {/* Home Agency Selection */}
+      <div className="home-agency-section">
+        <label>Home Agency (Your Agency)</label>
+        <div className="agency-dropdown" ref={dropdownRef}>
+          <input
+            type="text"
+            placeholder="Search for your agency..."
+            value={homeAgency ? homeAgency.agency : agencySearch}
+            onChange={(e) => {
+              setAgencySearch(e.target.value);
+              if (homeAgency) setHomeAgency(null);
+              setShowDropdown(true);
+            }}
+            onFocus={() => setShowDropdown(true)}
+          />
+          {showDropdown && (
+            <div className="dropdown-list">
+              {filteredDropdownAgencies.map((agency) => (
+                <div
+                  key={agency.ntd_id}
+                  className="dropdown-item"
+                  onClick={() => {
+                    setHomeAgency(agency);
+                    setAgencySearch('');
+                    setShowDropdown(false);
+                  }}
                 >
-                  {state}
-                </button>
+                  <span className="agency-name">{agency.agency}</span>
+                  <span className="agency-location">
+                    {agency.city}, {agency.state}
+                  </span>
+                </div>
               ))}
             </div>
-          </div>
-
-          <div className="filter-section">
-            <label>Annual Ridership</label>
-            <div className="filter-chips">
-              {metadata.ridership_ranges.map((range) => (
-                <button
-                  key={range.label}
-                  className={filters.ridershipRange?.label === range.label ? 'active' : ''}
-                  onClick={() =>
-                    setRidershipRange(
-                      filters.ridershipRange?.label === range.label ? null : range
-                    )
-                  }
-                >
-                  {range.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="filter-section">
-            <label>UZA Population</label>
-            <div className="filter-chips">
-              {metadata.population_ranges.map((range) => (
-                <button
-                  key={range.label}
-                  className={filters.populationRange?.label === range.label ? 'active' : ''}
-                  onClick={() =>
-                    setPopulationRange(
-                      filters.populationRange?.label === range.label ? null : range
-                    )
-                  }
-                >
-                  {range.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="filter-section">
-            <label>Transit Modes Operated</label>
-            <div className="filter-chips">
-              {metadata.modes.map((mode) => (
-                <button
-                  key={mode}
-                  className={filters.modes.includes(mode) ? 'active' : ''}
-                  onClick={() => toggleMode(mode)}
-                  title={metadata.mode_names[mode]}
-                >
-                  {mode}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="filter-section">
-            <label>Organization Type</label>
-            <div className="filter-chips">
-              {metadata.organization_types.map((type) => (
-                <button
-                  key={type}
-                  className={filters.organizationTypes.includes(type) ? 'active' : ''}
-                  onClick={() => toggleOrgType(type)}
-                  title={type}
-                >
-                  {type.length > 30 ? type.slice(0, 30) + '...' : type}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="filter-section">
-            <label>Reporter Type</label>
-            <div className="filter-chips">
-              {metadata.reporter_types.map((type) => (
-                <button
-                  key={type}
-                  className={filters.reporterTypes.includes(type) ? 'active' : ''}
-                  onClick={() => toggleReporterType(type)}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <button className="clear-filters" onClick={clearFilters}>
-            Clear All Filters
-          </button>
-        </div>
-
-        {/* Results Panel */}
-        <div className="results-panel">
-          <div className="results-header">
-            <span className="results-count">
-              {filteredAgencies.length} agencies match filters
-            </span>
-            <div className="results-actions">
-              <button onClick={selectAllVisible} disabled={selectedIds.size >= 20}>
-                Select Top {Math.min(20 - selectedIds.size, filteredAgencies.length)}
-              </button>
-              <button onClick={clearSelection} disabled={selectedIds.size === 0}>
-                Clear Selection
-              </button>
-            </div>
-          </div>
-
-          <div className="agency-table-container">
-            <table className="agency-table">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>Agency</th>
-                  <th>Location</th>
-                  <th>Ridership</th>
-                  <th>Modes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredAgencies.slice(0, 100).map((agency) => (
-                  <tr
-                    key={agency.ntd_id}
-                    className={selectedIds.has(agency.ntd_id) ? 'selected' : ''}
-                    onClick={() => toggleAgencySelection(agency.ntd_id)}
-                  >
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(agency.ntd_id)}
-                        onChange={() => toggleAgencySelection(agency.ntd_id)}
-                        disabled={!selectedIds.has(agency.ntd_id) && selectedIds.size >= 20}
-                      />
-                    </td>
-                    <td className="agency-name">{agency.agency}</td>
-                    <td>
-                      {agency.city}, {agency.state}
-                    </td>
-                    <td>{formatNumber(agency.unlinked_passenger_trips)}</td>
-                    <td className="modes-cell">
-                      {agency.modes.map((m) => (
-                        <span key={m} className="mode-badge" title={metadata.mode_names[m]}>
-                          {m}
-                        </span>
-                      ))}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filteredAgencies.length > 100 && (
-              <div className="table-note">
-                Showing first 100 of {filteredAgencies.length} results. Use filters to narrow down.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Selection Summary */}
-        <div className="selection-panel">
-          <h3>Selected Agencies ({selectedIds.size}/20)</h3>
-          {selectedAgencies.length === 0 ? (
-            <p className="empty-selection">
-              Click agencies in the table to select them for analysis.
-            </p>
-          ) : (
-            <ul className="selected-list">
-              {selectedAgencies.map((agency) => (
-                <li key={agency.ntd_id}>
-                  <span>{agency.agency}</span>
-                  <button onClick={() => toggleAgencySelection(agency.ntd_id)}>×</button>
-                </li>
-              ))}
-            </ul>
           )}
-          <button
-            className="proceed-button"
-            onClick={handleProceed}
-            disabled={selectedIds.size === 0}
-          >
-            Analyze {selectedIds.size} {selectedIds.size === 1 ? 'Agency' : 'Agencies'}
-          </button>
         </div>
+        {homeAgency && (
+          <div className="home-agency-card">
+            <strong>{homeAgency.agency}</strong>
+            <span>
+              {homeAgency.city}, {homeAgency.state} | {formatNumber(homeAgency.unlinked_passenger_trips)} trips
+            </span>
+          </div>
+        )}
       </div>
+
+      {homeAgency && (
+        <div className="filter-layout">
+          {/* Filter Panel */}
+          <div className="filter-panel">
+            <div className="filter-section">
+              <label>Search Peers</label>
+              <input
+                type="text"
+                placeholder="Filter by name or city..."
+                value={filters.searchQuery}
+                onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
+              />
+            </div>
+
+            <div className="filter-section">
+              <label>Reporter Type (match any)</label>
+              <div className="filter-chips">
+                {metadata.reporter_types.map((type) => (
+                  <button
+                    key={type}
+                    className={filters.reporterTypes.includes(type) ? 'active' : ''}
+                    onClick={() => toggleReporterType(type)}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-section">
+              <label>Transit Modes (must operate ALL selected)</label>
+              <div className="filter-chips">
+                {metadata.modes.map((mode) => (
+                  <button
+                    key={mode}
+                    className={filters.modes.includes(mode) ? 'active' : ''}
+                    onClick={() => toggleMode(mode)}
+                    title={metadata.mode_names[mode]}
+                  >
+                    {metadata.mode_names[mode] || mode}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-section">
+              <label>States (match any)</label>
+              <div className="filter-chips scrollable">
+                {metadata.states.map((state) => (
+                  <button
+                    key={state}
+                    className={filters.states.includes(state) ? 'active' : ''}
+                    onClick={() => toggleState(state)}
+                  >
+                    {state}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button className="clear-filters" onClick={clearFilters}>
+              Clear All Filters
+            </button>
+
+            <div className="filter-section similarity-section">
+              <label>Similarity Criteria</label>
+              <p className="helper-text">
+                Select criteria to rank agencies by similarity to your home agency.
+              </p>
+              <div className="filter-chips">
+                {SIMILARITY_CRITERIA.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    className={selectedCriteria.includes(key) ? 'active' : ''}
+                    onClick={() => toggleCriterion(key)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Results Panel */}
+          <div className="results-panel">
+            <div className="results-header">
+              <span className="results-count">{rankedAgencies.length} potential peers</span>
+              <div className="results-actions">
+                <button onClick={() => selectTopN(5)}>Select Top 5</button>
+                <button onClick={() => selectTopN(10)}>Select Top 10</button>
+                <button onClick={clearSelection} disabled={selectedPeerIds.size === 0}>
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <div className="agency-table-container">
+              <table className="agency-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Agency</th>
+                    <th>Location</th>
+                    {selectedCriteria.map((criterion) => (
+                      <th key={criterion}>
+                        {SIMILARITY_CRITERIA.find((c) => c.key === criterion)?.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rankedAgencies.slice(0, 100).map((agency, index) => (
+                    <tr
+                      key={agency.ntd_id}
+                      className={selectedPeerIds.has(agency.ntd_id) ? 'selected' : ''}
+                      onClick={() => togglePeerSelection(agency.ntd_id)}
+                    >
+                      <td>
+                        <input
+                          type="checkbox"
+                          checked={selectedPeerIds.has(agency.ntd_id)}
+                          onChange={() => togglePeerSelection(agency.ntd_id)}
+                          disabled={!selectedPeerIds.has(agency.ntd_id) && selectedPeerIds.size >= 19}
+                        />
+                      </td>
+                      <td className="agency-name-cell">
+                        <span className="rank">#{index + 1}</span>
+                        {agency.agency}
+                      </td>
+                      <td>
+                        {agency.city}, {agency.state}
+                      </td>
+                      {selectedCriteria.map((criterion) => (
+                        <td key={criterion}>{formatCriterionValue(agency, criterion)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {rankedAgencies.length > 100 && (
+                <div className="table-note">
+                  Showing top 100 of {rankedAgencies.length} results (sorted by similarity).
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Selection Summary */}
+          <div className="selection-panel">
+            <h3>Selected Peers ({selectedPeerIds.size}/19)</h3>
+            {selectedPeerIds.size === 0 ? (
+              <p className="empty-selection">Click agencies in the table to select them as peers.</p>
+            ) : (
+              <ul className="selected-list">
+                {agencies
+                  .filter((a) => selectedPeerIds.has(a.ntd_id))
+                  .map((agency) => (
+                    <li key={agency.ntd_id}>
+                      <span>{agency.agency}</span>
+                      <button onClick={() => togglePeerSelection(agency.ntd_id)}>×</button>
+                    </li>
+                  ))}
+              </ul>
+            )}
+            <button
+              className="proceed-button"
+              onClick={handleProceed}
+              disabled={selectedPeerIds.size === 0}
+            >
+              Compare {selectedPeerIds.size + 1} Agencies
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

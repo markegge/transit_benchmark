@@ -11,37 +11,101 @@ import {
   Legend,
   ResponsiveContainer,
   Cell,
-  PieChart,
-  Pie,
 } from 'recharts';
-import type { Agency, AgencyYearly, AgencyMode, Metadata } from '../types';
+import type { Agency, AgencyYearly, Metadata } from '../types';
 import { formatNumber, formatCurrency, formatPercent } from '../data';
 import './ExploreStep.css';
 
 interface Props {
-  agencies: Agency[];
+  homeAgency: Agency;
+  peerAgencies: Agency[];
   agencyYearly: AgencyYearly[];
-  agencyModes: AgencyMode[];
   metadata: Metadata;
   onBack: () => void;
 }
 
-type MetricKey = 'ridership' | 'expenses' | 'efficiency' | 'farebox';
+type MetricKey =
+  | 'ridership'
+  | 'expenses'
+  | 'fare_revenue'
+  | 'vehicle_hours'
+  | 'vehicle_miles'
+  | 'cost_per_trip'
+  | 'farebox_recovery';
+
+const METRICS: { key: MetricKey; label: string }[] = [
+  { key: 'ridership', label: 'Ridership' },
+  { key: 'expenses', label: 'Operating Expenses' },
+  { key: 'fare_revenue', label: 'Fare Revenue' },
+  { key: 'vehicle_hours', label: 'Vehicle Revenue Hours' },
+  { key: 'vehicle_miles', label: 'Vehicle Revenue Miles' },
+  { key: 'cost_per_trip', label: 'Cost per Trip' },
+  { key: 'farebox_recovery', label: 'Farebox Recovery' },
+];
 
 const COLORS = [
-  '#2563eb', '#dc2626', '#16a34a', '#9333ea', '#ea580c',
+  '#dc2626', // Home agency - red (stands out)
+  '#3b82f6', '#16a34a', '#9333ea', '#ea580c',
   '#0891b2', '#4f46e5', '#0d9488', '#d946ef', '#84cc16',
   '#f59e0b', '#06b6d4', '#8b5cf6', '#ec4899', '#14b8a6',
   '#f97316', '#6366f1', '#10b981', '#f43f5e', '#a855f7',
 ];
 
-export function ExploreStep({ agencies, agencyYearly, agencyModes, metadata, onBack }: Props) {
+function getYearlyValue(record: AgencyYearly, metric: MetricKey): number {
+  switch (metric) {
+    case 'ridership':
+      return record.unlinked_passenger_trips;
+    case 'expenses':
+      return record.total_operating_expenses;
+    case 'fare_revenue':
+      return record.fare_revenues_earned;
+    case 'vehicle_hours':
+      return record.vehicle_revenue_hours;
+    case 'vehicle_miles':
+      return record.vehicle_revenue_miles;
+    case 'cost_per_trip':
+      return record.unlinked_passenger_trips > 0
+        ? record.total_operating_expenses / record.unlinked_passenger_trips
+        : 0;
+    case 'farebox_recovery':
+      return record.total_operating_expenses > 0
+        ? (record.fare_revenues_earned / record.total_operating_expenses) * 100
+        : 0;
+  }
+}
+
+function formatMetricValue(value: number, metric: MetricKey): string {
+  switch (metric) {
+    case 'expenses':
+    case 'fare_revenue':
+    case 'cost_per_trip':
+      return formatCurrency(value);
+    case 'farebox_recovery':
+      return `${value.toFixed(1)}%`;
+    default:
+      return formatNumber(value);
+  }
+}
+
+export function ExploreStep({
+  homeAgency,
+  peerAgencies,
+  agencyYearly,
+  metadata,
+  onBack,
+}: Props) {
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>('ridership');
-  const [selectedAgencyId, setSelectedAgencyId] = useState<number | null>(
-    agencies.length === 1 ? agencies[0].ntd_id : null
+
+  // All agencies = home + peers
+  const allAgencies = useMemo(
+    () => [homeAgency, ...peerAgencies],
+    [homeAgency, peerAgencies]
   );
 
-  const agencyIds = useMemo(() => new Set(agencies.map((a) => a.ntd_id)), [agencies]);
+  const agencyIds = useMemo(
+    () => new Set(allAgencies.map((a) => a.ntd_id)),
+    [allAgencies]
+  );
 
   // Filter yearly data for selected agencies
   const filteredYearly = useMemo(
@@ -49,255 +113,161 @@ export function ExploreStep({ agencies, agencyYearly, agencyModes, metadata, onB
     [agencyYearly, agencyIds]
   );
 
-  // Filter mode data for selected agencies
-  const filteredModes = useMemo(
-    () => agencyModes.filter((am) => agencyIds.has(am.ntd_id)),
-    [agencyModes, agencyIds]
-  );
-
-  // Comparison bar chart data
-  const comparisonData = useMemo(() => {
-    return agencies.map((agency) => {
-      let value: number;
-      switch (selectedMetric) {
-        case 'ridership':
-          value = agency.unlinked_passenger_trips;
-          break;
-        case 'expenses':
-          value = agency.total_operating_expenses;
-          break;
-        case 'efficiency':
-          value = agency.trips_per_hour ?? 0;
-          break;
-        case 'farebox':
-          value = (agency.farebox_recovery ?? 0) * 100;
-          break;
-      }
-      return {
-        name: agency.agency.length > 25 ? agency.agency.slice(0, 25) + '...' : agency.agency,
-        fullName: agency.agency,
-        value,
-        ntd_id: agency.ntd_id,
-      };
-    }).sort((a, b) => b.value - a.value);
-  }, [agencies, selectedMetric]);
-
   // Trend chart data - pivot by year
   const trendData = useMemo(() => {
     const years = metadata.years;
     return years.map((year) => {
       const yearData: Record<string, number | string> = { year };
-      agencies.forEach((agency) => {
+      allAgencies.forEach((agency) => {
         const record = filteredYearly.find(
           (fy) => fy.ntd_id === agency.ntd_id && fy.report_year === year
         );
         if (record) {
-          switch (selectedMetric) {
-            case 'ridership':
-              yearData[agency.agency] = record.unlinked_passenger_trips;
-              break;
-            case 'expenses':
-              yearData[agency.agency] = record.total_operating_expenses;
-              break;
-            case 'efficiency':
-              yearData[agency.agency] =
-                record.vehicle_revenue_hours > 0
-                  ? record.unlinked_passenger_trips / record.vehicle_revenue_hours
-                  : 0;
-              break;
-            case 'farebox':
-              yearData[agency.agency] =
-                record.total_operating_expenses > 0
-                  ? (record.fare_revenues_earned / record.total_operating_expenses) * 100
-                  : 0;
-              break;
-          }
+          yearData[agency.agency] = getYearlyValue(record, selectedMetric);
         }
       });
       return yearData;
     });
-  }, [agencies, filteredYearly, selectedMetric, metadata.years]);
+  }, [allAgencies, filteredYearly, selectedMetric, metadata.years]);
 
-  // Mode breakdown for selected agency or all agencies combined
-  const modeBreakdownData = useMemo(() => {
-    const relevantModes = selectedAgencyId
-      ? filteredModes.filter((m) => m.ntd_id === selectedAgencyId)
-      : filteredModes;
-
-    const byMode: Record<string, number> = {};
-    relevantModes.forEach((m) => {
-      byMode[m.mode] = (byMode[m.mode] || 0) + m.unlinked_passenger_trips;
+  // Generate CSV data for download
+  const generateCSV = () => {
+    const headers = ['Year', ...allAgencies.map((a) => a.agency)];
+    const rows = trendData.map((row) => {
+      return [
+        row.year,
+        ...allAgencies.map((a) => row[a.agency] ?? ''),
+      ].join(',');
     });
-
-    return Object.entries(byMode)
-      .map(([mode, value]) => ({
-        mode,
-        name: metadata.mode_names[mode] || mode,
-        value,
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [filteredModes, selectedAgencyId, metadata.mode_names]);
-
-  const formatValue = (val: number) => {
-    switch (selectedMetric) {
-      case 'ridership':
-        return formatNumber(val);
-      case 'expenses':
-        return formatCurrency(val);
-      case 'efficiency':
-        return val.toFixed(1);
-      case 'farebox':
-        return `${val.toFixed(1)}%`;
-    }
+    return [headers.join(','), ...rows].join('\n');
   };
 
-  const metricLabel = {
-    ridership: 'Annual Ridership',
-    expenses: 'Operating Expenses',
-    efficiency: 'Passengers per Hour',
-    farebox: 'Farebox Recovery %',
-  }[selectedMetric];
+  const handleDownload = () => {
+    const csv = generateCSV();
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ntd_${selectedMetric}_${metadata.years[0]}-${metadata.years[metadata.years.length - 1]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const truncateName = (name: string) =>
-    name.length > 20 ? name.slice(0, 20) + '...' : name;
+    name.length > 25 ? name.slice(0, 25) + '...' : name;
+
+  const metricLabel = METRICS.find((m) => m.key === selectedMetric)?.label || selectedMetric;
 
   return (
     <div className="explore-step">
       <div className="explore-header">
         <button className="back-button" onClick={onBack}>
-          ← Back to Selection
+          ← Back to Peer Selection
         </button>
         <div>
-          <h2>Analyzing {agencies.length} {agencies.length === 1 ? 'Agency' : 'Agencies'}</h2>
+          <h2>Performance Comparison</h2>
           <p className="agency-list-summary">
-            {agencies.slice(0, 5).map((a) => a.agency).join(', ')}
-            {agencies.length > 5 && ` and ${agencies.length - 5} more`}
+            <strong>{homeAgency.agency}</strong> vs {peerAgencies.length} peer{peerAgencies.length !== 1 ? 's' : ''}
           </p>
         </div>
       </div>
 
       <div className="metric-selector">
-        <span>Metric:</span>
-        <button
-          className={selectedMetric === 'ridership' ? 'active' : ''}
-          onClick={() => setSelectedMetric('ridership')}
-        >
-          Ridership
-        </button>
-        <button
-          className={selectedMetric === 'expenses' ? 'active' : ''}
-          onClick={() => setSelectedMetric('expenses')}
-        >
-          Expenses
-        </button>
-        <button
-          className={selectedMetric === 'efficiency' ? 'active' : ''}
-          onClick={() => setSelectedMetric('efficiency')}
-        >
-          Efficiency
-        </button>
-        <button
-          className={selectedMetric === 'farebox' ? 'active' : ''}
-          onClick={() => setSelectedMetric('farebox')}
-        >
-          Farebox Recovery
-        </button>
+        <span>Performance Measure:</span>
+        {METRICS.map(({ key, label }) => (
+          <button
+            key={key}
+            className={selectedMetric === key ? 'active' : ''}
+            onClick={() => setSelectedMetric(key)}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       <div className="charts-grid">
-        {/* Comparison Bar Chart */}
+        {/* Trend Line Chart - Main visualization */}
+        <div className="chart-card chart-card-full">
+          <div className="chart-header-with-actions">
+            <h3>{metricLabel} Over Time</h3>
+            <button className="download-button" onClick={handleDownload}>
+              Download CSV
+            </button>
+          </div>
+          <ResponsiveContainer width="100%" height={450}>
+            <LineChart data={trendData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="year" />
+              <YAxis tickFormatter={(val) => formatMetricValue(val, selectedMetric)} />
+              <Tooltip
+                formatter={(value) => [formatMetricValue(Number(value), selectedMetric), '']}
+              />
+              <Legend formatter={truncateName} />
+              {allAgencies.map((agency, index) => {
+                const isHome = agency.ntd_id === homeAgency.ntd_id;
+                return (
+                  <Line
+                    key={agency.ntd_id}
+                    type="monotone"
+                    dataKey={agency.agency}
+                    stroke={COLORS[index % COLORS.length]}
+                    strokeWidth={isHome ? 4 : 2}
+                    dot={{ r: isHome ? 5 : 3 }}
+                    activeDot={{ r: isHome ? 8 : 5 }}
+                  />
+                );
+              })}
+            </LineChart>
+          </ResponsiveContainer>
+          <div className="chart-legend-note">
+            <span className="home-indicator">●</span> Home agency line is thicker
+          </div>
+        </div>
+
+        {/* Latest Year Comparison Bar Chart */}
         <div className="chart-card">
-          <h3>Agency Comparison: {metricLabel}</h3>
-          <ResponsiveContainer width="100%" height={Math.max(300, agencies.length * 35)}>
+          <h3>{metricLabel} ({metadata.latest_year})</h3>
+          <ResponsiveContainer width="100%" height={Math.max(300, allAgencies.length * 32)}>
             <BarChart
-              data={comparisonData}
+              data={allAgencies
+                .map((agency) => {
+                  const record = filteredYearly.find(
+                    (fy) => fy.ntd_id === agency.ntd_id && fy.report_year === metadata.latest_year
+                  );
+                  return {
+                    name: agency.agency.length > 28 ? agency.agency.slice(0, 28) + '...' : agency.agency,
+                    fullName: agency.agency,
+                    value: record ? getYearlyValue(record, selectedMetric) : 0,
+                    isHome: agency.ntd_id === homeAgency.ntd_id,
+                    ntd_id: agency.ntd_id,
+                  };
+                })
+                .sort((a, b) => b.value - a.value)}
               layout="vertical"
               margin={{ top: 5, right: 30, left: 180, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis type="number" tickFormatter={formatValue} />
+              <XAxis type="number" tickFormatter={(val) => formatMetricValue(val, selectedMetric)} />
               <YAxis type="category" dataKey="name" width={170} tick={{ fontSize: 11 }} />
               <Tooltip
-                formatter={(value) => [formatValue(Number(value)), metricLabel]}
-                labelFormatter={(_, payload) =>
-                  payload?.[0]?.payload?.fullName || ''
-                }
+                formatter={(value) => [formatMetricValue(Number(value), selectedMetric), metricLabel]}
+                labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName || ''}
               />
               <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                {comparisonData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                {allAgencies.map((agency, index) => (
+                  <Cell
+                    key={agency.ntd_id}
+                    fill={agency.ntd_id === homeAgency.ntd_id ? '#dc2626' : COLORS[(index + 1) % COLORS.length]}
+                  />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Trend Line Chart */}
-        <div className="chart-card">
-          <h3>{metricLabel} Trends (2019-2024)</h3>
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={trendData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="year" />
-              <YAxis tickFormatter={formatValue} />
-              <Tooltip formatter={(value) => [formatValue(Number(value)), '']} />
-              <Legend formatter={truncateName} />
-              {agencies.map((agency, index) => (
-                <Line
-                  key={agency.ntd_id}
-                  type="monotone"
-                  dataKey={agency.agency}
-                  stroke={COLORS[index % COLORS.length]}
-                  strokeWidth={2}
-                  dot={{ r: 4 }}
-                  activeDot={{ r: 6 }}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Mode Breakdown */}
-        <div className="chart-card">
-          <div className="chart-header-with-select">
-            <h3>Ridership by Mode</h3>
-            <select
-              value={selectedAgencyId ?? 'all'}
-              onChange={(e) =>
-                setSelectedAgencyId(e.target.value === 'all' ? null : Number(e.target.value))
-              }
-            >
-              <option value="all">All Selected Agencies</option>
-              {agencies.map((a) => (
-                <option key={a.ntd_id} value={a.ntd_id}>
-                  {a.agency.length > 40 ? a.agency.slice(0, 40) + '...' : a.agency}
-                </option>
-              ))}
-            </select>
-          </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={modeBreakdownData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
-              >
-                {modeBreakdownData.map((_, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => formatNumber(Number(value))} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-
         {/* Summary Table */}
-        <div className="chart-card summary-table-card">
-          <h3>Summary Statistics ({metadata.latest_year})</h3>
+        <div className="chart-card">
+          <h3>Agency Summary ({metadata.latest_year})</h3>
           <div className="summary-table-container">
             <table className="summary-table">
               <thead>
@@ -305,24 +275,24 @@ export function ExploreStep({ agencies, agencyYearly, agencyModes, metadata, onB
                   <th>Agency</th>
                   <th>Ridership</th>
                   <th>Expenses</th>
-                  <th>Pass/Hr</th>
-                  <th>Farebox</th>
                   <th>Cost/Trip</th>
+                  <th>Farebox</th>
                 </tr>
               </thead>
               <tbody>
-                {agencies.map((agency) => (
-                  <tr key={agency.ntd_id}>
+                {allAgencies.map((agency) => (
+                  <tr
+                    key={agency.ntd_id}
+                    className={agency.ntd_id === homeAgency.ntd_id ? 'home-row' : ''}
+                  >
                     <td className="agency-name-cell">
-                      {agency.agency.length > 30
-                        ? agency.agency.slice(0, 30) + '...'
-                        : agency.agency}
+                      {agency.ntd_id === homeAgency.ntd_id && <span className="home-badge">HOME</span>}
+                      {agency.agency.length > 25 ? agency.agency.slice(0, 25) + '...' : agency.agency}
                     </td>
                     <td>{formatNumber(agency.unlinked_passenger_trips)}</td>
                     <td>{formatCurrency(agency.total_operating_expenses)}</td>
-                    <td>{agency.trips_per_hour?.toFixed(1) ?? 'N/A'}</td>
-                    <td>{formatPercent(agency.farebox_recovery)}</td>
                     <td>{formatCurrency(agency.cost_per_trip)}</td>
+                    <td>{formatPercent(agency.farebox_recovery)}</td>
                   </tr>
                 ))}
               </tbody>

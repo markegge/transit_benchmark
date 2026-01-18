@@ -6,6 +6,19 @@ from pathlib import Path
 import pandas as pd
 
 
+def normalize_ntd_id(ntd_id, year: int):
+    """Normalize NTD ID - for 2019-2021, use last 5 characters if longer than 5."""
+    ntd_str = str(ntd_id)
+    if year <= 2021 and len(ntd_str) > 5:
+        # Extract last 5 characters (the actual NTD ID portion)
+        ntd_str = ntd_str[-5:]
+    # Convert to integer, stripping any leading zeros for consistency
+    try:
+        return int(ntd_str)
+    except ValueError:
+        return None
+
+
 def load_and_normalize(year: int) -> pd.DataFrame:
     """Load a year's data and normalize column names."""
     df = pd.read_csv(f"metrics/{year}.csv", encoding="latin-1")
@@ -17,6 +30,10 @@ def load_and_normalize(year: int) -> pd.DataFrame:
         .str.replace(r"\s+", "_", regex=True)
         .str.replace(r"[^\w]", "", regex=True)
     )
+
+    # Normalize NTD IDs for 2019-2021 data
+    if "ntd_id" in df.columns:
+        df["ntd_id"] = df["ntd_id"].apply(lambda x: normalize_ntd_id(x, year))
 
     # Add year column if not present
     if "report_year" not in df.columns:
@@ -123,6 +140,7 @@ def main():
         "total_operating_expenses": "sum",
         "fare_revenues_earned": "sum",
         "vehicle_revenue_hours": "sum",
+        "vehicle_revenue_miles": "sum",
         "mode": lambda x: list(x.dropna().unique()),  # List of modes operated
     }
     if "uza_name" in latest_data.columns:
@@ -141,12 +159,20 @@ def main():
     agency_list["cost_per_trip"] = (
         agency_list["total_operating_expenses"] / agency_list["unlinked_passenger_trips"]
     ).round(2)
+    agency_list["fare_per_trip"] = (
+        agency_list["fare_revenues_earned"] / agency_list["unlinked_passenger_trips"]
+    ).round(2)
     agency_list["farebox_recovery"] = (
         agency_list["fare_revenues_earned"] / agency_list["total_operating_expenses"]
     ).round(4)
     agency_list["trips_per_hour"] = (
         agency_list["unlinked_passenger_trips"] / agency_list["vehicle_revenue_hours"]
     ).round(2)
+
+    # Filter out agencies without ridership data (per requirements)
+    before_filter = len(agency_list)
+    agency_list = agency_list[agency_list["unlinked_passenger_trips"] > 0]
+    print(f"Filtered out {before_filter - len(agency_list)} agencies without ridership data")
 
     # Fill NaN with None for JSON
     agency_list = agency_list.where(pd.notnull(agency_list), None)
@@ -160,8 +186,12 @@ def main():
     # =========================================================================
     # 2. Create full historical data for all agencies (by year)
     # =========================================================================
+    # Only include agencies that have ridership data
+    valid_agency_ids = set(agency_list["ntd_id"].tolist())
+
     agency_yearly = (
-        combined.groupby(["ntd_id", "report_year"])
+        combined[combined["ntd_id"].isin(valid_agency_ids)]
+        .groupby(["ntd_id", "report_year"])
         .agg(
             {
                 "agency": "first",
@@ -169,6 +199,7 @@ def main():
                 "total_operating_expenses": "sum",
                 "fare_revenues_earned": "sum",
                 "vehicle_revenue_hours": "sum",
+                "vehicle_revenue_miles": "sum",
                 "agency_voms": "first",
             }
         )

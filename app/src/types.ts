@@ -34,7 +34,9 @@ export interface Agency {
   total_operating_expenses: number;
   fare_revenues_earned: number;
   vehicle_revenue_hours: number;
+  vehicle_revenue_miles: number;
   cost_per_trip: number | null;
+  fare_per_trip: number | null;
   farebox_recovery: number | null;
   trips_per_hour: number | null;
 }
@@ -47,6 +49,7 @@ export interface AgencyYearly {
   total_operating_expenses: number;
   fare_revenues_earned: number;
   vehicle_revenue_hours: number;
+  vehicle_revenue_miles: number;
   agency_voms: number | null;
 }
 
@@ -70,12 +73,23 @@ export interface YearlyModeTotal {
   vehicle_revenue_hours: number;
 }
 
+// Similarity criteria that can be used for peer ranking
+export type SimilarityCriterion =
+  | 'population'
+  | 'ridership'
+  | 'fare_per_trip'
+  | 'cost_per_trip'
+  | 'operating_expenses'
+  | 'vehicle_revenue_hours'
+  | 'vehicle_revenue_miles';
+
 export interface Filters {
-  states: string[];
-  organizationTypes: string[];
   reporterTypes: string[];
-  modes: string[];
-  ridershipRange: RangeFilter | null;
-  populationRange: RangeFilter | null;
+  modes: string[];  // Matches agencies that operate ALL selected modes
+  states: string[];
   searchQuery: string;
+}
+
+export interface SimilarityConfig {
+  criteria: SimilarityCriterion[];
 }

@@ -5,9 +5,8 @@ import {
   loadMetadata,
   loadAgencies,
   loadAgencyYearly,
-  loadAgencyModes,
 } from './data';
-import type { Metadata, Agency, AgencyYearly, AgencyMode } from './types';
+import type { Metadata, Agency, AgencyYearly } from './types';
 import './App.css';
 
 type Step = 'filter' | 'explore';
@@ -16,26 +15,24 @@ function App() {
   const [metadata, setMetadata] = useState<Metadata | null>(null);
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [agencyYearly, setAgencyYearly] = useState<AgencyYearly[]>([]);
-  const [agencyModes, setAgencyModes] = useState<AgencyMode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [step, setStep] = useState<Step>('filter');
-  const [selectedAgencies, setSelectedAgencies] = useState<Agency[]>([]);
+  const [homeAgency, setHomeAgency] = useState<Agency | null>(null);
+  const [peerAgencies, setPeerAgencies] = useState<Agency[]>([]);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [meta, agencyList, yearly, modes] = await Promise.all([
+        const [meta, agencyList, yearly] = await Promise.all([
           loadMetadata(),
           loadAgencies(),
           loadAgencyYearly(),
-          loadAgencyModes(),
         ]);
         setMetadata(meta);
         setAgencies(agencyList);
         setAgencyYearly(yearly);
-        setAgencyModes(modes);
         setLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -45,8 +42,9 @@ function App() {
     loadData();
   }, []);
 
-  const handleSelectAgencies = (selected: Agency[]) => {
-    setSelectedAgencies(selected);
+  const handleSelectAgencies = (home: Agency, peers: Agency[]) => {
+    setHomeAgency(home);
+    setPeerAgencies(peers);
     setStep('explore');
   };
 
@@ -77,9 +75,9 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>National Transit Database Dashboard</h1>
+        <h1>NTD Transit Benchmarking</h1>
         <p className="subtitle">
-          {metadata.total_agencies.toLocaleString()} agencies | {metadata.years[0]}-{metadata.years[metadata.years.length - 1]}
+          Compare {metadata.total_agencies.toLocaleString()} agencies | {metadata.years[0]}-{metadata.years[metadata.years.length - 1]}
         </p>
       </header>
 
@@ -90,15 +88,15 @@ function App() {
             metadata={metadata}
             onSelectAgencies={handleSelectAgencies}
           />
-        ) : (
+        ) : homeAgency ? (
           <ExploreStep
-            agencies={selectedAgencies}
+            homeAgency={homeAgency}
+            peerAgencies={peerAgencies}
             agencyYearly={agencyYearly}
-            agencyModes={agencyModes}
             metadata={metadata}
             onBack={handleBack}
           />
-        )}
+        ) : null}
       </main>
 
       <footer className="app-footer">

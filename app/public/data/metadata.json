@@ -635,8 +635,8 @@
     "Yuba City, CA",
     "Yuma, AZ--CA"
   ],
-  "total_agencies": 4591,
-  "total_records": 22293,
+  "total_agencies": 2385,
+  "total_records": 22349,
   "ridership_ranges": [
     {
       "label": "Very Large (>100M trips)",
