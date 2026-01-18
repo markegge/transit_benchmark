@@ -455,6 +455,7 @@ export function FilterStep({
                           type="checkbox"
                           checked={selectedPeerIds.has(agency.ntd_id)}
                           onChange={() => togglePeerSelection(agency.ntd_id)}
+                          onClick={(e) => e.stopPropagation()}
                           disabled={!selectedPeerIds.has(agency.ntd_id) && selectedPeerIds.size >= 19}
                         />
                       </td>
