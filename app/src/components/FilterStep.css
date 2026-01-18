@@ -8,6 +8,13 @@
   margin-bottom: 1.5rem;
 }
 
+.filter-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
 .filter-header h2 {
   margin: 0 0 0.5rem;
   color: #1e3a8a;
@@ -16,6 +23,24 @@
 .filter-header p {
   margin: 0;
   color: #64748b;
+}
+
+.start-over-button {
+  padding: 0.5rem 1rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.start-over-button:hover {
+  background: #fecaca;
+  border-color: #f87171;
 }
 
 /* Home Agency Section */

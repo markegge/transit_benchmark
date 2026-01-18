@@ -22,6 +22,7 @@ interface Props {
   agencyYearly: AgencyYearly[];
   metadata: Metadata;
   onBack: () => void;
+  onStartOver: () => void;
 }
 
 type MetricKey =
@@ -99,6 +100,7 @@ export function ExploreStep({
   agencyYearly,
   metadata,
   onBack,
+  onStartOver,
 }: Props) {
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>('ridership');
 
@@ -167,9 +169,14 @@ export function ExploreStep({
   return (
     <div className="explore-step">
       <div className="explore-header">
-        <button className="back-button" onClick={onBack}>
-          ← Back to Peer Selection
-        </button>
+        <div className="explore-header-buttons">
+          <button className="back-button" onClick={onBack}>
+            ← Back to Peer Selection
+          </button>
+          <button className="start-over-button" onClick={onStartOver}>
+            Start Over
+          </button>
+        </div>
         <div>
           <h2>Performance Comparison</h2>
           <p className="agency-list-summary">

@@ -11,6 +11,12 @@
   margin-bottom: 1.5rem;
 }
 
+.explore-header-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .back-button {
   padding: 0.5rem 1rem;
   background: white;
@@ -25,6 +31,24 @@
 .back-button:hover {
   border-color: #3b82f6;
   color: #3b82f6;
+}
+
+.start-over-button {
+  padding: 0.5rem 1rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.start-over-button:hover {
+  background: #fecaca;
+  border-color: #f87171;
 }
 
 .explore-header h2 {

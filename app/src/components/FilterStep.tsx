@@ -6,7 +6,10 @@ import './FilterStep.css';
 interface Props {
   agencies: Agency[];
   metadata: Metadata;
+  initialHomeAgency: Agency | null;
+  initialPeerIds: number[];
   onSelectAgencies: (homeAgency: Agency, peers: Agency[]) => void;
+  onStartOver: () => void;
 }
 
 const INITIAL_FILTERS: Filters = {
@@ -77,14 +80,23 @@ function calculateSimilarity(
   return totalDiff;
 }
 
-export function FilterStep({ agencies, metadata, onSelectAgencies }: Props) {
-  const [homeAgency, setHomeAgency] = useState<Agency | null>(null);
+export function FilterStep({
+  agencies,
+  metadata,
+  initialHomeAgency,
+  initialPeerIds,
+  onSelectAgencies,
+  onStartOver,
+}: Props) {
+  const [homeAgency, setHomeAgency] = useState<Agency | null>(initialHomeAgency);
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
   const [selectedCriteria, setSelectedCriteria] = useState<SimilarityCriterion[]>([
     'population',
     'ridership',
   ]);
-  const [selectedPeerIds, setSelectedPeerIds] = useState<Set<number>>(new Set());
+  const [selectedPeerIds, setSelectedPeerIds] = useState<Set<number>>(
+    new Set(initialPeerIds)
+  );
   const [showDropdown, setShowDropdown] = useState(false);
   const [agencySearch, setAgencySearch] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -262,8 +274,17 @@ export function FilterStep({ agencies, metadata, onSelectAgencies }: Props) {
   return (
     <div className="filter-step">
       <div className="filter-header">
-        <h2>Step 1: Select Your Agency and Peers</h2>
-        <p>First select your home agency, then use filters and similarity criteria to find peer agencies.</p>
+        <div className="filter-header-row">
+          <div>
+            <h2>Step 1: Select Your Agency and Peers</h2>
+            <p>First select your home agency, then use filters and similarity criteria to find peer agencies.</p>
+          </div>
+          {homeAgency && (
+            <button className="start-over-button" onClick={onStartOver}>
+              Start Over
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Home Agency Selection */}
