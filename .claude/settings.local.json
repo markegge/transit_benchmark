@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(node --version:*)",
+      "Bash(uv venv:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(uv pip install:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(python3:*)",
+      "Bash(source:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(open http://localhost:5173/)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd NTD dashboard with two-step filter-explore workflow\n\n- Data preprocessing script to combine 2019-2024 NTD metrics\n- React/TypeScript dashboard with Vite and Recharts\n- Step 1: Filter agencies by state, ridership, population, modes, org type\n- Step 2: Explore selected agencies with comparison charts and trends\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}

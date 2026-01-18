@@ -1,0 +1,93 @@
+Term,Who reports it?,Definition
+Agency,All,The transit agency's name.
+City,All,The city in which the agency is headquartered.
+State,All,The state in which the agency is headquartered.
+Legacy NTDID,All,A four-digit identifying number for each agency used in the legacy NTD system.
+NTDID,All,A five-digit identifying number for each agency used in the current NTD system.
+Organization Type,All,Description of the agency's legal entity.
+Reporter Type,All,The type of NTD report that the agency completed this year.
+Primary UZA Population,"DOES NOT APPLY TO: Rural General Public Transit Sub-recipients, Intercity Bus Sub-recipients",The population of the urbanized area primarily served by the agency.
+Agency VOMS,"DOES NOT APPLY TO: Building Reporters, Planning Reporters, Separate Service Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients",The number of revenue vehicles operated across the whole agency to meet the annual maximum service requirement. This is the revenue vehicle count during the peak season of the year; on the week and day that maximum service is provided. Vehicles operated in maximum service (VOMS) exclude atypical days and one-time special events.
+Mode,"DOES NOT APPLY TO: Planning Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients","A system for carrying transit passengers described by specific right-of-way (ROW), technology and operational features."
+Type of Service,"DOES NOT APPLY TO: Planning Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients",Describes how public transportation services are provided by the transit agency: directly operated (DO) or purchased transportation (PT) services.
+Mode VOMS,"DOES NOT APPLY TO: Building Reporters, Planning Reporters, Separate Service Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients",The number of revenue vehicles operated by the given mode and type of service to meet the annual maximum service requirement. This is the revenue vehicle count during the peak season of the year; on the week and day that maximum service is provided. Vehicles operated in maximum service (VOMS) exclude atypical days and one-time special events.
+Rural General Public Transit,,Reporter type for agencies that do not operate in an urban area and are not Tribes.
+Intercity Bus,,Reporter type for private bus lines providing non-transit service connecting wide-ranging areas.
+Building Reporter,,Reporter type for agencies that are building a new transit service but not yet operating it.
+Planning Reporter,,Reporter type for entities that expend funds in planning transit but do not operate service.
+Separate Service,,Reporter type for agencies that have a contractual relationship with another NTD reporter to provide service but do not report any service themselves.
+Tribal Subsidy,,Reporter type for Tribes that subsidize service but do not operate service or pay the full cost of service.
+Full Reporter,,Reporter type for agencies that operate urban service and complete the most detailed level of NTD report. Urban agencies that operate more than 30 vehicles or operate Fixed Guideway service are required to complete Full Reports; other urban agencies may do so if they wish.
+Reduced Reporter,,Reporter type for agencies that operate urban service but complete a simplified NTD report. Urban agencies that operate 30 or fewer vehicles and do not operate Fixed Guideway service are eligible to complete Reduced Reports. This is sometimes called a Small Systems Report.
+Urbanized Area (UZA),,"An area defined by the U. S. Census Bureau that includes: 
+- One or more incorporated cities, villages, and towns (central place) 
+- The adjacent densely settled surrounding territory (urban fringe) that together has a minimum of 50,000 persons 
+The urban fringe generally consists of contiguous territory having a density of at least 1,000 persons per square mile. Urbanized areas do not conform to congressional districts or any other political boundaries."
+Alaska Railroad (AR),,The passenger service portion of the Alaska Railroad Corporation. The service encompasses only car miles for passenger cars; car miles for freight cars are specifically excluded.
+Bus (MB),,"A transit mode comprised of rubber-tired passenger vehicles operating on fixed routes and schedules over roadways. Vehicles are powered by: 
+- Diesel 
+- Gasoline 
+- Battery 
+- Alternative fuel engines contained within the vehicle"
+Bus Rapid Transit (RB),,"Fixed-route bus mode: 
+- In which the majority of each line operates in a separated right-of-way dedicated for public transportation use during peak periods; and 
+- That includes features that emulate the services provided by rail fixed guideway public transportation systems, including: 
+   o Defined stations 
+   o Traffic signal priority for public transportation vehicles 
+   o Short headway bidirectional services for a substantial part of weekdays and weekend days 
+   o Pre-board ticketing, platform level boarding, and separate branding 
+This mode may include portions of service that are fixed-guideway and non-fixed-guideway."
+Cable Car (CC),,"A transit mode that is an electric railway with individually controlled transit vehicles attached to a moving cable located below the street surface and powered by engines or motors at a central location, not onboard the vehicle."
+Commuter Bus (CB),,"Fixed-route bus systems that are primarily connecting outlying areas with a central city through bus service that operates with at least five miles of continuous closed-door service. This service may operate motorcoaches (aka over-the-road buses), and usually features peak scheduling, multiple-trip tickets, and limited stops in the central city."
+Commuter Rail (CR),,"A transit mode that is an electric or diesel propelled railway for urban passenger train service consisting of local short distance travel operating between a central city and adjacent suburbs. Service must be operated on a regular basis by or under contract with a transit operator for the purpose of transporting passengers within urbanized areas (UZAs), or between urbanized areas and outlying areas. 
+Such rail service, using either locomotive hauled or self-propelled railroad passenger cars, is generally characterized by: 
+- Multi-trip tickets 
+- Specific station to station fares 
+- Railroad employment practices 
+- Usually only one or two stations in the central business district 
+It does not include: 
+- Heavy rail (HR) rapid transit 
+- Light rail (LR)/streetcar transit service 
+Intercity rail service is excluded, except for that portion of such service that is operated by or under contract with a public transit agency for predominantly commuter services. Predominantly commuter service means that for any given trip segment (i.e., distance between any two stations), more than 50 percent of the average daily ridership makes a return trip on the same day. Only the predominantly commuter service portion of an intercity route is eligible for inclusion when determining commuter rail (CR) route miles."
+Demand Response (DR),,"A transit mode comprised of automobiles, vans or small buses operating in response to calls from passengers or their agents to the transit operator, who then dispatches a vehicle to pick up the passengers and transport them to their destinations. A demand response (DR) operation is characterized by the following: 
+- The vehicles do not operate over a fixed route or on a fixed schedule except, perhaps, on a temporary basis to satisfy a special need; and 
+- Typically, the vehicle may be dispatched to pick up several passengers at different pick-up points before taking them to their respective destinations and may even be interrupted en route to these destinations to pick up other passengers. 
+The following types of operations fall under the above definitions provided they are not on a scheduled fixed route basis: 
+- Many origins—many destinations 
+- Many origins—one destination 
+- One origin—many destinations 
+- One origin—one destination"
+Demand Response Taxi (DT),,"A special form of the demand response mode operated through taxicab providers. The mode is always purchased transportation type of service. In order to be reportable, there must be a system in place through which passengers can share rides."
+Ferryboat (FB),,"A transit mode comprised of vessels carrying passengers and/or vehicles over a body of water that are generally steam or diesel powered. Intercity ferryboat (FB) service is excluded, except for that portion of such service that is operated by or under contract with a public transit agency for predominantly commuter services. Predominantly commuter service means that for any given trip segment (i.e., distance between any two piers), more than 50 percent of the average daily ridership makes a return trip on the ferryboat on the same day. Only the predominantly commuter service portion of an intercity route is eligible for inclusion when determining ferryboat (FB) route miles."
+Heavy Rail (HR),,"A transit mode that is an electric railway with the capacity for a heavy volume of traffic. It is characterized by: 
+- High speed and rapid acceleration passenger rail cars operating singly or in multi-car trains on fixed rails 
+- Separate rights-of-way (ROW) from which all other vehicular and foot traffic are excluded 
+- Sophisticated signaling 
+- Raised platform loading"
+Hybrid Rail (YR),,"Rail systems primarily operating routes on the National system of railroads, but not operating with the characteristics of commuter rail. This service typically operates light rail-type vehicles as diesel multipleunit trains (DMU’s). These trains do not meet Federal Railroad Administration standards, and so must operate with temporal separation from freight rail traffic."
+Inclined Plane (IP),,A transit mode that is a railway operating over exclusive right-of-way (ROW) on steep grades (slopes) with powerless vehicles propelled by moving cables attached to the vehicles and powered by engines or motors at a central location not onboard the vehicle. The special tramway types of vehicles have passenger seats that remain horizontal while the undercarriage (truck) is angled parallel to the slope.
+Light Rail (LR),,"A transit mode that is typically an electric railway with a light volume traffic capacity compared to heavy rail (HR). It is characterized by: 
+- Passenger rail cars operating singly (or in short, usually two car, trains) on fixed rails in shared or exclusive right-of-way (ROW) 
+- Low or high platform loading 
+- Vehicle power drawn from an overhead electric line via a trolley or a pantograph"
+Monorail/Automated Guideway (MG),,Monorail and Automated Guideway modes operate on exclusive guideway without using steel wheels on rails.
+Streetcar Rail (SR),,This mode is for rail transit systems operating entire routes predominantly on streets in mixed-traffic. This service typically operates with single-car trains powered by overhead catenaries and with frequent stops.
+Trolleybus (TB),,"A transit mode comprised of electric rubber-tired passenger vehicles, manually steered and operating singly on city streets. Vehicles are propelled by a motor drawing current through overhead wires via trolleys, from a central power source not onboard the vehicle."
+Vanpool (VP),,"A transit mode comprised of vans, small buses and other vehicles operating as a ride sharing arrangement, providing transportation to a group of individuals traveling directly between their homes and a regular destination within the same geographical area."
+Jitney (JT),,A transit mode comprising passenger cars or vans operating on fixed routes (sometimes with minor deviations) as demand warrants without fixed schedules or fixed stops.
+Aerial Tramway (TR),,A transit mode that is an electric system of aerial cables with suspended powerless passenger vehicles. The vehicles are propelled by separate cables attached to the vehicle suspension system and powered by engines or motors at a central location not on-board the vehicle.
+Publico (PB),,"A transit mode comprised of passenger vans or small buses operating with fixed routes but no fixed schedules in Puerto Rico. Publicos (PB) are a privately owned and operated public transit service which is market oriented and unsubsidized, but regulated through a public service commission, state or local government. Publicos (PB) are operated under franchise agreements, fares are regulated by route and there are special insurance requirements. Vehicle capacity varies from 8 to 24, and the vehicles may be owned or leased by the operator."
+Questionable (Q),,"FTA marks a data point as Questionable when there is reason to believe it is incorrect, but the reporting agency has been unable to correct the data or offer an explanation for its anomalous appearance."
+Waived (W),,"FTA marks a data point as Waived when the reporting agency has not reported the data point according to NTD reporting requirements, but has received a waiver to report the data as-is for one year."
+Fare Revenues Earned,"DOES NOT APPLY TO: Building Reporters, Planning Reporters, Separate Service Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients",Fares earned by the given mode/type of service.
+Total Operating Expenses,"DOES NOT APPLY TO: Building Reporters, Planning Reporters, Separate Service Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients",Total of all operating expenses for the mode/type of service.
+Unlinked Passenger Trips,"DOES NOT APPLY TO: Building Reporters, Planning Reporters, Separate Service Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients",The number of passengers who boarded public transportation vehicles. Passengers are counted each time they board a vehicle no matter how many vehicles they use to travel from their origin to their destination.
+Vehicle Revenue Hours,"DOES NOT APPLY TO: Building Reporters, Planning Reporters, Separate Service Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients",Total number of hours that vehicles/passenger cars traveled while in revenue service during the report year. Includes both typical and atypical service. Excludes deadhead.
+Passenger Miles,ONLY APPLIES TO: Full Reporters,The sum of the distances ridden by all passengers during the entire Fiscal Year.
+Vehicle Revenue Miles,"DOES NOT APPLY TO: Building Reporters, Planning Reporters, Separate Service Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients","The miles that vehicles (or passenger cars, for rail service) travel while in revenue service. Vehicle revenue miles exclude deadhead, operator training, maintenance testing, and school bus and charter services."
+Fare Revenues per Unlinked Passenger Trip ,"DOES NOT APPLY TO: Building Reporters, Planning Reporters, Separate Service Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients",The average fare collected per passenger.
+Recovery Ratio,"DOES NOT APPLY TO: Building Reporters, Planning Reporters, Separate Service Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients",The proportion of operating expenses that are paid for by fare revenues.
+Cost per Hour,"DOES NOT APPLY TO: Building Reporters, Planning Reporters, Separate Service Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients",The average cost to operate one vehicle/passenger car for one hour of passenger service.
+Passengers per Hour,"DOES NOT APPLY TO: Building Reporters, Planning Reporters, Separate Service Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients",The average number of passengers to board a vehicle/passenger car in one hour of service.
+Cost per Passenger,"DOES NOT APPLY TO: Building Reporters, Planning Reporters, Separate Service Reporters, Tribal Subsidy Reporters, Intercity Bus Sub-recipients",The average cost to transport one passenger from the beginning of her trip to the end.
+Cost per Passenger Mile,ONLY APPLIES TO: Full Reporters,The average cost to transport one passenger one mile.
