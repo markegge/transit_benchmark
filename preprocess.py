@@ -114,7 +114,10 @@ def main():
     for col in numeric_cols:
         if col in combined.columns:
             combined[col] = pd.to_numeric(
-                combined[col].astype(str).str.replace(",", ""), errors="coerce"
+                combined[col].astype(str)
+                .str.replace(r"[$,]", "", regex=True)
+                .str.strip(),
+                errors="coerce"
             )
 
     # Create output directory
