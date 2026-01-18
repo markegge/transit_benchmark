@@ -31,7 +31,8 @@ type MetricKey =
   | 'vehicle_hours'
   | 'vehicle_miles'
   | 'cost_per_trip'
-  | 'farebox_recovery';
+  | 'farebox_recovery'
+  | 'rides_per_capita';
 
 const METRICS: { key: MetricKey; label: string }[] = [
   { key: 'ridership', label: 'Ridership' },
@@ -41,6 +42,7 @@ const METRICS: { key: MetricKey; label: string }[] = [
   { key: 'vehicle_miles', label: 'Vehicle Revenue Miles' },
   { key: 'cost_per_trip', label: 'Cost per Trip' },
   { key: 'farebox_recovery', label: 'Farebox Recovery' },
+  { key: 'rides_per_capita', label: 'Rides per Capita' },
 ];
 
 const COLORS = [
@@ -71,6 +73,8 @@ function getYearlyValue(record: AgencyYearly, metric: MetricKey): number {
       return record.total_operating_expenses > 0
         ? (record.fare_revenues_earned / record.total_operating_expenses) * 100
         : 0;
+    case 'rides_per_capita':
+      return record.rides_per_capita ?? 0;
   }
 }
 
@@ -82,6 +86,8 @@ function formatMetricValue(value: number, metric: MetricKey): string {
       return formatCurrency(value);
     case 'farebox_recovery':
       return `${value.toFixed(1)}%`;
+    case 'rides_per_capita':
+      return value.toFixed(1);
     default:
       return formatNumber(value);
   }
@@ -277,6 +283,7 @@ export function ExploreStep({
                   <th>Expenses</th>
                   <th>Cost/Trip</th>
                   <th>Farebox</th>
+                  <th>Rides/Cap</th>
                 </tr>
               </thead>
               <tbody>
@@ -293,6 +300,7 @@ export function ExploreStep({
                     <td>{formatCurrency(agency.total_operating_expenses)}</td>
                     <td>{formatCurrency(agency.cost_per_trip)}</td>
                     <td>{formatPercent(agency.farebox_recovery)}</td>
+                    <td>{agency.rides_per_capita?.toFixed(1) ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>

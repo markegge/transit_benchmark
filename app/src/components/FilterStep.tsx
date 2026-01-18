@@ -24,6 +24,7 @@ const SIMILARITY_CRITERIA: { key: SimilarityCriterion; label: string }[] = [
   { key: 'operating_expenses', label: 'Total Operating Expenses' },
   { key: 'vehicle_revenue_hours', label: 'Vehicle Revenue Hours' },
   { key: 'vehicle_revenue_miles', label: 'Vehicle Revenue Miles' },
+  { key: 'rides_per_capita', label: 'Rides per Capita' },
 ];
 
 // Get raw value for a criterion
@@ -43,6 +44,8 @@ function getCriterionValue(agency: Agency, criterion: SimilarityCriterion): numb
       return agency.vehicle_revenue_hours;
     case 'vehicle_revenue_miles':
       return agency.vehicle_revenue_miles;
+    case 'rides_per_capita':
+      return agency.rides_per_capita ?? 0;
   }
 }
 
@@ -249,6 +252,8 @@ export function FilterStep({ agencies, metadata, onSelectAgencies }: Props) {
       case 'cost_per_trip':
       case 'operating_expenses':
         return formatCurrency(value);
+      case 'rides_per_capita':
+        return value.toFixed(1);
       default:
         return formatNumber(value);
     }

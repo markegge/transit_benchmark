@@ -39,6 +39,7 @@ export interface Agency {
   fare_per_trip: number | null;
   farebox_recovery: number | null;
   trips_per_hour: number | null;
+  rides_per_capita: number | null;
 }
 
 export interface AgencyYearly {
@@ -51,6 +52,8 @@ export interface AgencyYearly {
   vehicle_revenue_hours: number;
   vehicle_revenue_miles: number;
   agency_voms: number | null;
+  primary_uza_population: number | null;
+  rides_per_capita: number | null;
 }
 
 export interface AgencyMode {
@@ -81,7 +84,8 @@ export type SimilarityCriterion =
   | 'cost_per_trip'
   | 'operating_expenses'
   | 'vehicle_revenue_hours'
-  | 'vehicle_revenue_miles';
+  | 'vehicle_revenue_miles'
+  | 'rides_per_capita';
 
 export interface Filters {
   reporterTypes: string[];

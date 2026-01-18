@@ -168,6 +168,9 @@ def main():
     agency_list["trips_per_hour"] = (
         agency_list["unlinked_passenger_trips"] / agency_list["vehicle_revenue_hours"]
     ).round(2)
+    agency_list["rides_per_capita"] = (
+        agency_list["unlinked_passenger_trips"] / agency_list["primary_uza_population"]
+    ).round(2)
 
     # Filter out agencies without ridership data (per requirements)
     before_filter = len(agency_list)
@@ -201,10 +204,14 @@ def main():
                 "vehicle_revenue_hours": "sum",
                 "vehicle_revenue_miles": "sum",
                 "agency_voms": "first",
+                "primary_uza_population": "first",
             }
         )
         .reset_index()
     )
+    agency_yearly["rides_per_capita"] = (
+        agency_yearly["unlinked_passenger_trips"] / agency_yearly["primary_uza_population"]
+    ).round(2)
     agency_yearly.to_json(output_dir / "agency_yearly.json", orient="records")
     print(f"Saved agency yearly data: {len(agency_yearly)} records")
 
