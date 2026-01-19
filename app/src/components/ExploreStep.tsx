@@ -247,7 +247,7 @@ export function ExploreStep({
         {/* Latest Year Comparison Bar Chart */}
         <div className="chart-card">
           <h3>{metricLabel} ({metadata.latest_year})</h3>
-          <ResponsiveContainer width="100%" height={Math.max(300, allAgencies.length * 32)}>
+          <ResponsiveContainer width="100%" height={Math.max(300, allAgencies.length * 36)}>
             <BarChart
               data={allAgencies
                 .map((agency) => {
@@ -255,7 +255,7 @@ export function ExploreStep({
                     (fy) => fy.ntd_id === agency.ntd_id && fy.report_year === metadata.latest_year
                   );
                   return {
-                    name: agency.agency.length > 28 ? agency.agency.slice(0, 28) + '...' : agency.agency,
+                    name: truncateName(agency.agency, 32),
                     fullName: agency.agency,
                     value: record ? getYearlyValue(record, selectedMetric) : 0,
                     isHome: agency.ntd_id === homeAgency.ntd_id,
@@ -264,11 +264,11 @@ export function ExploreStep({
                 })
                 .sort((a, b) => b.value - a.value)}
               layout="vertical"
-              margin={{ top: 5, right: 30, left: 180, bottom: 5 }}
+              margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" tickFormatter={(val) => formatMetricValue(val, selectedMetric)} />
-              <YAxis type="category" dataKey="name" width={170} tick={{ fontSize: 11 }} />
+              <YAxis type="category" dataKey="name" width={200} tick={{ fontSize: 11 }} />
               <Tooltip
                 formatter={(value) => [formatMetricValue(Number(value), selectedMetric), metricLabel]}
                 labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName || ''}
