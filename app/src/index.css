@@ -10,17 +10,30 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   margin: 0;
   min-width: 320px;
+  overflow-x: hidden;
 }
 
 #root {
   width: 100%;
+  overflow-x: hidden;
 }
 
 button {
   font-family: inherit;
+  touch-action: manipulation;
+}
+
+input, select {
+  font-size: 16px; /* Prevent iOS zoom on focus */
+}
+
+/* Improve touch scrolling */
+.recharts-wrapper {
+  touch-action: pan-y pinch-zoom;
 }
