@@ -1,6 +1,6 @@
 import type { Metadata, Agency, AgencyYearly, AgencyMode, YearlyModeTotal } from './types';
 
-const DATA_PATH = '/data';
+const DATA_PATH = `${import.meta.env.BASE_URL}data`;
 
 export async function loadMetadata(): Promise<Metadata> {
   const response = await fetch(`${DATA_PATH}/metadata.json`);
