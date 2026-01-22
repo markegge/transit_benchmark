@@ -213,7 +213,7 @@ export function ExploreStep({
         {/* Trend Line Chart - Main visualization */}
         <div className="chart-card chart-card-full">
           <h3>{metricLabel} Over Time</h3>
-          <ResponsiveContainer width="100%" height={450}>
+          <ResponsiveContainer width="100%" height={563}>
             <LineChart data={trendData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="year" />
