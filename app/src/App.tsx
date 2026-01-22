@@ -38,6 +38,7 @@ function App() {
   const [step, setStep] = useState<Step>('filter');
   const [homeAgency, setHomeAgency] = useState<Agency | null>(null);
   const [peerAgencies, setPeerAgencies] = useState<Agency[]>([]);
+  const [filterKey, setFilterKey] = useState(0);
 
   // Restore from cookies after agencies are loaded
   useEffect(() => {
@@ -99,6 +100,7 @@ function App() {
     setHomeAgency(null);
     setPeerAgencies([]);
     setStep('filter');
+    setFilterKey((k) => k + 1);
     deleteCookie(COOKIE_HOME_AGENCY);
     deleteCookie(COOKIE_PEER_AGENCIES);
   }, []);
@@ -135,6 +137,7 @@ function App() {
       <main className="app-main">
         {step === 'filter' ? (
           <FilterStep
+            key={filterKey}
             agencies={agencies}
             metadata={metadata}
             initialHomeAgency={homeAgency}

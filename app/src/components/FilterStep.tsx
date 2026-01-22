@@ -501,9 +501,10 @@ export function FilterStep({
             <button
               className="proceed-button"
               onClick={handleProceed}
-              disabled={selectedPeerIds.size === 0}
             >
-              Compare {selectedPeerIds.size + 1} Agencies
+              {selectedPeerIds.size === 0
+                ? 'View Charts (No Peers)'
+                : `Compare ${selectedPeerIds.size + 1} Agencies`}
             </button>
           </div>
         </div>

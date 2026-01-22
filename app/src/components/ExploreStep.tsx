@@ -187,7 +187,8 @@ export function ExploreStep({
         <div>
           <h2>Performance Comparison</h2>
           <p className="agency-list-summary">
-            <strong>{homeAgency.agency}</strong> vs {peerAgencies.length} peer{peerAgencies.length !== 1 ? 's' : ''}
+            <strong>{homeAgency.agency}</strong>
+            {peerAgencies.length > 0 && ` vs ${peerAgencies.length} peer${peerAgencies.length !== 1 ? 's' : ''}`}
           </p>
         </div>
       </div>
