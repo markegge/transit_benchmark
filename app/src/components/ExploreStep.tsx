@@ -11,6 +11,7 @@ import {
   Legend,
   ResponsiveContainer,
   Cell,
+  LabelList,
 } from 'recharts';
 import type { Agency, AgencyYearly, Metadata } from '../types';
 import { formatNumber, formatCurrency, formatPercent } from '../data';
@@ -103,6 +104,7 @@ export function ExploreStep({
   onStartOver,
 }: Props) {
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>('ridership');
+  const [hoveredYear, setHoveredYear] = useState<number | null>(null);
 
   // All agencies = home + peers
   const allAgencies = useMemo(
@@ -214,16 +216,19 @@ export function ExploreStep({
         <div className="chart-card chart-card-full">
           <h3>{metricLabel} Over Time</h3>
           <ResponsiveContainer width="100%" height={563}>
-            <LineChart data={trendData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
+            <LineChart
+              data={trendData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              onMouseMove={(state: { activeLabel?: string | number }) => {
+                if (state?.activeLabel) {
+                  setHoveredYear(Number(state.activeLabel));
+                }
+              }}
+              onMouseLeave={() => setHoveredYear(null)}
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="year" />
               <YAxis tickFormatter={(val) => formatMetricValue(val, selectedMetric)} />
-              <Tooltip
-                formatter={(value, name) => [
-                  formatMetricValue(Number(value), selectedMetric),
-                  truncateName(String(name), 40),
-                ]}
-              />
               <Legend formatter={renderLegendText} wrapperStyle={{ paddingTop: 20 }} />
               {allAgencies.map((agency, index) => {
                 const isHome = agency.ntd_id === homeAgency.ntd_id;
@@ -237,7 +242,27 @@ export function ExploreStep({
                     strokeWidth={isHome ? 4 : 2}
                     dot={{ r: isHome ? 5 : 3, fill: color, strokeWidth: 0 }}
                     activeDot={{ r: isHome ? 8 : 5, fill: color, strokeWidth: 0 }}
-                  />
+                  >
+                    <LabelList
+                      dataKey={agency.agency}
+                      position="top"
+                      content={({ x, y, value, index: pointIndex }) => {
+                        const year = trendData[pointIndex as number]?.year;
+                        if (year !== hoveredYear || value === undefined) return null;
+                        return (
+                          <text
+                            x={x}
+                            y={(y as number) - 10}
+                            fill={color}
+                            fontSize={10}
+                            textAnchor="middle"
+                          >
+                            {formatMetricValue(Number(value), selectedMetric)}
+                          </text>
+                        );
+                      }}
+                    />
+                  </Line>
                 );
               })}
             </LineChart>
