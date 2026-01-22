@@ -184,13 +184,16 @@ export function ExploreStep({
             Start Over
           </button>
         </div>
-        <div>
+        <div className="explore-header-title">
           <h2>Performance Comparison</h2>
           <p className="agency-list-summary">
             <strong>{homeAgency.agency}</strong>
             {peerAgencies.length > 0 && ` vs ${peerAgencies.length} peer${peerAgencies.length !== 1 ? 's' : ''}`}
           </p>
         </div>
+        <button className="download-button" onClick={handleDownload}>
+          Download CSV
+        </button>
       </div>
 
       <div className="metric-selector">
@@ -209,14 +212,9 @@ export function ExploreStep({
       <div className="charts-grid">
         {/* Trend Line Chart - Main visualization */}
         <div className="chart-card chart-card-full">
-          <div className="chart-header-with-actions">
-            <h3>{metricLabel} Over Time</h3>
-            <button className="download-button" onClick={handleDownload}>
-              Download CSV
-            </button>
-          </div>
+          <h3>{metricLabel} Over Time</h3>
           <ResponsiveContainer width="100%" height={450}>
-            <LineChart data={trendData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <LineChart data={trendData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="year" />
               <YAxis tickFormatter={(val) => formatMetricValue(val, selectedMetric)} />
@@ -226,18 +224,19 @@ export function ExploreStep({
                   truncateName(String(name), 40),
                 ]}
               />
-              <Legend formatter={renderLegendText} />
+              <Legend formatter={renderLegendText} wrapperStyle={{ paddingTop: 20 }} />
               {allAgencies.map((agency, index) => {
                 const isHome = agency.ntd_id === homeAgency.ntd_id;
+                const color = COLORS[index % COLORS.length];
                 return (
                   <Line
                     key={agency.ntd_id}
                     type="monotone"
                     dataKey={agency.agency}
-                    stroke={COLORS[index % COLORS.length]}
+                    stroke={color}
                     strokeWidth={isHome ? 4 : 2}
-                    dot={{ r: isHome ? 5 : 3 }}
-                    activeDot={{ r: isHome ? 8 : 5 }}
+                    dot={{ r: isHome ? 5 : 3, fill: color, strokeWidth: 0 }}
+                    activeDot={{ r: isHome ? 8 : 5, fill: color, strokeWidth: 0 }}
                   />
                 );
               })}
@@ -316,6 +315,35 @@ export function ExploreStep({
                     <td>{formatCurrency(agency.cost_per_trip)}</td>
                     <td>{formatPercent(agency.farebox_recovery)}</td>
                     <td>{agency.rides_per_capita?.toFixed(1) ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Transit Modes */}
+        <div className="chart-card">
+          <h3>Transit Modes</h3>
+          <div className="modes-table-container">
+            <table className="modes-table">
+              <tbody>
+                {allAgencies.map((agency) => (
+                  <tr
+                    key={agency.ntd_id}
+                    className={agency.ntd_id === homeAgency.ntd_id ? 'home-row' : ''}
+                  >
+                    <td className="agency-name-cell">
+                      {agency.ntd_id === homeAgency.ntd_id && <span className="home-badge">HOME</span>}
+                      {agency.agency.length > 25 ? agency.agency.slice(0, 25) + '...' : agency.agency}
+                    </td>
+                    <td className="modes-cell">
+                      {agency.modes.map((mode) => (
+                        <span key={mode} className="mode-chip" title={metadata.mode_names[mode] || mode}>
+                          {metadata.mode_names[mode] || mode}
+                        </span>
+                      ))}
+                    </td>
                   </tr>
                 ))}
               </tbody>

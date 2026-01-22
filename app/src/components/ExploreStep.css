@@ -11,6 +11,10 @@
   margin-bottom: 1.5rem;
 }
 
+.explore-header-title {
+  flex: 1;
+}
+
 .explore-header-buttons {
   display: flex;
   flex-direction: column;
@@ -157,6 +161,8 @@
   font-size: 0.8125rem;
   font-weight: 500;
   transition: background 0.15s;
+  white-space: nowrap;
+  align-self: center;
 }
 
 .download-button:hover {
@@ -219,6 +225,52 @@
   vertical-align: middle;
 }
 
+/* Transit Modes Table */
+.modes-table-container {
+  overflow-x: auto;
+}
+
+.modes-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.modes-table td {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.modes-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.modes-table tbody tr.home-row {
+  background: #fef2f2;
+}
+
+.modes-table tbody tr.home-row:hover {
+  background: #fee2e2;
+}
+
+.modes-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.mode-chip {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
   .charts-grid {
@@ -243,6 +295,10 @@
 
   .explore-header-buttons button {
     flex: 1;
+  }
+
+  .explore-header > .download-button {
+    width: 100%;
   }
 
   .metric-selector {

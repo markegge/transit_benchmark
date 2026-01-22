@@ -338,16 +338,6 @@ export function FilterStep({
           {/* Filter Panel */}
           <div className="filter-panel">
             <div className="filter-section">
-              <label>Search Peers</label>
-              <input
-                type="text"
-                placeholder="Filter by name or city..."
-                value={filters.searchQuery}
-                onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
-              />
-            </div>
-
-            <div className="filter-section">
               <label>Reporter Type (match any)</label>
               <div className="filter-chips">
                 {metadata.reporter_types.map((type) => (
@@ -421,6 +411,13 @@ export function FilterStep({
             <div className="results-header">
               <span className="results-count">{rankedAgencies.length} potential peers</span>
               <div className="results-actions">
+                <input
+                  type="text"
+                  className="peer-search-input"
+                  placeholder="Search..."
+                  value={filters.searchQuery}
+                  onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
+                />
                 <button onClick={() => selectTopN(5)}>Select Top 5</button>
                 <button onClick={() => selectTopN(10)}>Select Top 10</button>
                 <button onClick={clearSelection} disabled={selectedPeerIds.size === 0}>
