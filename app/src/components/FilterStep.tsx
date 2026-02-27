@@ -285,6 +285,23 @@ export function FilterStep({
             </button>
           )}
         </div>
+        <p className="intro-text">
+          Transit Peers is a free benchmarking tool for US public transit agencies.
+          Using data from the National Transit Database (NTD), you can compare ridership,
+          operating expenses, farebox recovery, cost per trip, and other key performance
+          metrics across more than 1,000 agencies from 2019 to 2024. Select your agency,
+          find similar peers, and explore how your system performs over time.
+        </p>
+      </div>
+
+      {/* Instructional Video */}
+      <div className="video-section">
+        <iframe
+          src="https://www.youtube.com/embed/NKduIzIZUBE"
+          title="How to use Transit Peers"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        ></iframe>
       </div>
 
       {/* Home Agency Selection */}

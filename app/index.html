@@ -2,12 +2,64 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-    <title>NTD Transit Benchmarking</title>
+
+    <title>Transit Peers — Compare US Transit Agency Performance | NTD Benchmarking</title>
+    <meta name="description" content="Compare 1,000+ US transit agencies side by side. Benchmark ridership, operating costs, farebox recovery, and more using National Transit Database (NTD) data from 2019-2024. Find peer agencies and track performance trends." />
+    <link rel="canonical" href="https://transitpeers.net/" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://transitpeers.net/" />
+    <meta property="og:site_name" content="Transit Peers" />
+    <meta property="og:title" content="Transit Peers — Compare US Transit Agency Performance" />
+    <meta property="og:description" content="Benchmark 1,000+ US transit agencies using NTD data. Compare ridership, costs, farebox recovery, and more from 2019-2024." />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Transit Peers — Compare US Transit Agency Performance" />
+    <meta name="twitter:description" content="Benchmark 1,000+ US transit agencies using NTD data. Compare ridership, costs, farebox recovery, and more from 2019-2024." />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Transit Peers",
+      "url": "https://transitpeers.net",
+      "description": "Compare and benchmark US transit agency performance using National Transit Database data. Analyze ridership, operating costs, farebox recovery, and more across 1,000+ agencies from 2019-2024.",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "isBasedOn": {
+        "@type": "Dataset",
+        "name": "National Transit Database (NTD)",
+        "description": "Annual transit agency performance data reported to the Federal Transit Administration, covering ridership, finances, operations, and service metrics for US public transit agencies.",
+        "url": "https://www.transit.dot.gov/ntd",
+        "creator": {
+          "@type": "GovernmentOrganization",
+          "name": "Federal Transit Administration"
+        },
+        "temporalCoverage": "2019/2024",
+        "license": "https://www.usa.gov/government-copyright"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <noscript>
+      <h1>Transit Peers — US Transit Agency Benchmarking Tool</h1>
+      <p>Transit Peers lets you compare over 1,000 US transit agencies using data from the National Transit Database (NTD). Benchmark ridership, operating expenses, farebox recovery, cost per trip, rides per capita, and more across 2019-2024. Select your home agency, find similar peers by population, ridership, or operating characteristics, and explore performance trends over time.</p>
+      <p>This application requires JavaScript to run. Please enable JavaScript in your browser.</p>
+    </noscript>
   </body>
 </html>

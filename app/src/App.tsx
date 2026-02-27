@@ -128,9 +128,9 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>NTD Transit Benchmarking</h1>
+        <h1>Transit Peers</h1>
         <p className="subtitle">
-          Compare {metadata.total_agencies.toLocaleString()} agencies | {metadata.years[0]}-{metadata.years[metadata.years.length - 1]}
+          NTD Transit Benchmarking — Compare {metadata.total_agencies.toLocaleString()} agencies | {metadata.years[0]}-{metadata.years[metadata.years.length - 1]}
         </p>
       </header>
 

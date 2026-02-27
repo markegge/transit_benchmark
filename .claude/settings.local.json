@@ -19,7 +19,8 @@
       "WebFetch(domain:benchmarking.tpm-portal.com)",
       "Bash(uv run python:*)",
       "Bash(git commit:*)",
-      "Bash(python preprocess.py:*)"
+      "Bash(python preprocess.py:*)",
+      "Bash(grep:*)"
     ]
   }
 }
