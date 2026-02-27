@@ -28,7 +28,7 @@ function deleteCookie(name: string) {
   document.cookie = `${name}=;max-age=0;path=/`;
 }
 
-function HelpModal({ onClose }: { onClose: () => void }) {
+function HelpModal({ onClose, onPlayVideo }: { onClose: () => void; onPlayVideo: () => void }) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -74,9 +74,38 @@ function HelpModal({ onClose }: { onClose: () => void }) {
         </section>
 
         <section>
+          <h3>Quick Start Video</h3>
+          <p><a href="#" onClick={(e) => { e.preventDefault(); onClose(); onPlayVideo(); }}>Watch the quick start video</a> for a walkthrough of how to use Transit Peers.</p>
+        </section>
+
+        <section>
           <h3>About the Data</h3>
           <p>All data comes from the <strong>National Transit Database (NTD)</strong> published by the Federal Transit Administration. Coverage spans 2019–2024 and includes agencies that report ridership data. Some smaller agencies may be excluded if they do not report to the NTD.</p>
         </section>
+      </div>
+    </div>
+  );
+}
+
+function VideoModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="video-modal-overlay" onClick={onClose}>
+      <div className="video-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="video-modal-close" onClick={onClose}>&times;</button>
+        <iframe
+          src="https://www.youtube.com/embed/NKduIzIZUBE?autoplay=1"
+          title="How to use Transit Peers"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        ></iframe>
       </div>
     </div>
   );
@@ -94,6 +123,7 @@ function App() {
   const [peerAgencies, setPeerAgencies] = useState<Agency[]>([]);
   const [filterKey, setFilterKey] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
 
   // Restore from cookies after agencies are loaded
   useEffect(() => {
@@ -183,14 +213,30 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Transit Peers</h1>
+        <a className="header-home-link" href="#" onClick={(e) => { e.preventDefault(); handleStartOver(); }}>
+          <svg className="header-logo" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="4" y="6" width="24" height="18" rx="4" fill="white"/>
+            <rect x="7" y="9" width="7" height="5" rx="1" fill="#93c5fd"/>
+            <rect x="18" y="9" width="7" height="5" rx="1" fill="#93c5fd"/>
+            <rect x="4" y="17" width="24" height="3" fill="#bfdbfe"/>
+            <circle cx="10" cy="26" r="2.5" fill="white"/>
+            <circle cx="22" cy="26" r="2.5" fill="white"/>
+            <circle cx="10" cy="26" r="1" fill="#93c5fd"/>
+            <circle cx="22" cy="26" r="1" fill="#93c5fd"/>
+          </svg>
+          <h1>Transit Peers</h1>
+        </a>
         <p className="subtitle">
           NTD Transit Benchmarking — Compare {metadata.total_agencies.toLocaleString()} agencies | {metadata.years[0]}-{metadata.years[metadata.years.length - 1]}
         </p>
         <button className="help-button" onClick={() => setShowHelp(true)} title="Help">?</button>
       </header>
 
-      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} onPlayVideo={() => setShowVideo(true)} />}
+
+      {showVideo && (
+        <VideoModal onClose={() => setShowVideo(false)} />
+      )}
 
       <main className="app-main">
         {step === 'filter' ? (
@@ -202,6 +248,7 @@ function App() {
             initialPeerIds={peerAgencies.map((p) => p.ntd_id)}
             onSelectAgencies={handleSelectAgencies}
             onStartOver={handleStartOver}
+            onSetShowVideo={setShowVideo}
           />
         ) : homeAgency ? (
           <ExploreStep

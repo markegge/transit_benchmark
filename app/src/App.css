@@ -13,6 +13,25 @@
   position: relative;
 }
 
+.header-home-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+  transition: opacity 0.15s;
+}
+
+.header-home-link:hover {
+  opacity: 0.85;
+}
+
+.header-logo {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
 .app-header h1 {
   margin: 0;
   font-size: 1.75rem;
@@ -208,6 +227,61 @@
   margin-bottom: 0.35rem;
 }
 
+/* Video Modal */
+.video-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 1rem;
+}
+
+.video-modal {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  aspect-ratio: 16 / 9;
+  background: black;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.video-modal iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-modal-close {
+  position: absolute;
+  top: -2.5rem;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 1.5rem;
+  color: #1e293b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  line-height: 1;
+  z-index: 1;
+}
+
+.video-modal-close:hover {
+  background: white;
+}
+
 /* Responsive header */
 @media (max-width: 768px) {
   .app-header {
@@ -216,6 +290,11 @@
 
   .app-header h1 {
     font-size: 1.25rem;
+  }
+
+  .header-logo {
+    width: 28px;
+    height: 28px;
   }
 
   .help-button {

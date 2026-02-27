@@ -10,6 +10,7 @@ interface Props {
   initialPeerIds: number[];
   onSelectAgencies: (homeAgency: Agency, peers: Agency[]) => void;
   onStartOver: () => void;
+  onSetShowVideo: (show: boolean) => void;
 }
 
 const INITIAL_FILTERS: Filters = {
@@ -87,6 +88,7 @@ export function FilterStep({
   initialPeerIds,
   onSelectAgencies,
   onStartOver,
+  onSetShowVideo,
 }: Props) {
   const [homeAgency, setHomeAgency] = useState<Agency | null>(initialHomeAgency);
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
@@ -99,6 +101,7 @@ export function FilterStep({
   );
   const [showDropdown, setShowDropdown] = useState(false);
   const [agencySearch, setAgencySearch] = useState('');
+  const [videoFabDismissed, setVideoFabDismissed] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -111,6 +114,7 @@ export function FilterStep({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
 
   // Filter agencies for home agency dropdown
   const filteredDropdownAgencies = useMemo(() => {
@@ -294,15 +298,20 @@ export function FilterStep({
         </p>
       </div>
 
-      {/* Instructional Video */}
-      <div className="video-section">
-        <iframe
-          src="https://www.youtube.com/embed/NKduIzIZUBE"
-          title="How to use Transit Peers"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        ></iframe>
-      </div>
+      {/* Floating Quick Start Video Button */}
+      {!videoFabDismissed && !homeAgency && (
+        <div className="video-fab">
+          <button className="video-fab-dismiss" onClick={() => setVideoFabDismissed(true)} title="Dismiss">&times;</button>
+          <button className="video-fab-trigger" onClick={() => onSetShowVideo(true)}>
+            <img
+              src="https://img.youtube.com/vi/NKduIzIZUBE/mqdefault.jpg"
+              alt="Quick start video thumbnail"
+            />
+            <span className="video-fab-label">Quick Start Video</span>
+          </button>
+        </div>
+      )}
+
 
       {/* Home Agency Selection */}
       <div className="home-agency-section">
