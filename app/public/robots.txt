@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://transitpeers.net/sitemap.xml
+Sitemap: https://www.transitpeers.net/sitemap.xml
