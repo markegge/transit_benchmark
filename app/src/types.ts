@@ -67,6 +67,19 @@ export interface AgencyMode {
   mode_voms: number;
 }
 
+export interface AgencyModeYearly {
+  ntd_id: number;
+  report_year: number;
+  mode: string;
+  agency: string;
+  unlinked_passenger_trips: number;
+  total_operating_expenses: number;
+  fare_revenues_earned: number;
+  vehicle_revenue_hours: number;
+  vehicle_revenue_miles: number;
+  mode_voms: number;
+}
+
 export interface YearlyModeTotal {
   report_year: number;
   mode: string;

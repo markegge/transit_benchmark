@@ -308,6 +308,28 @@ def main():
     print(f"Saved agency mode breakdown: {len(agency_modes)} records")
 
     # =========================================================================
+    # 3b. Create mode breakdown for each agency by year
+    # =========================================================================
+    agency_mode_yearly = (
+        combined[combined["ntd_id"].isin(valid_agency_ids)]
+        .groupby(["ntd_id", "report_year", "mode"])
+        .agg(
+            {
+                "agency": "first",
+                "unlinked_passenger_trips": "sum",
+                "total_operating_expenses": "sum",
+                "fare_revenues_earned": "sum",
+                "vehicle_revenue_hours": "sum",
+                "vehicle_revenue_miles": "sum",
+                "mode_voms": "sum",
+            }
+        )
+        .reset_index()
+    )
+    agency_mode_yearly.to_json(output_dir / "agency_mode_yearly.json", orient="records")
+    print(f"Saved agency mode yearly data: {len(agency_mode_yearly)} records")
+
+    # =========================================================================
     # 4. National totals by year and mode
     # =========================================================================
     yearly_mode = (

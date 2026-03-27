@@ -1,4 +1,4 @@
-import type { Metadata, Agency, AgencyYearly, AgencyMode, YearlyModeTotal } from './types';
+import type { Metadata, Agency, AgencyYearly, AgencyMode, AgencyModeYearly, YearlyModeTotal } from './types';
 
 const DATA_PATH = `${import.meta.env.BASE_URL}data`;
 
@@ -19,6 +19,11 @@ export async function loadAgencyYearly(): Promise<AgencyYearly[]> {
 
 export async function loadAgencyModes(): Promise<AgencyMode[]> {
   const response = await fetch(`${DATA_PATH}/agency_modes.json`);
+  return response.json();
+}
+
+export async function loadAgencyModeYearly(): Promise<AgencyModeYearly[]> {
+  const response = await fetch(`${DATA_PATH}/agency_mode_yearly.json`);
   return response.json();
 }
 

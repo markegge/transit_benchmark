@@ -5,8 +5,9 @@ import {
   loadMetadata,
   loadAgencies,
   loadAgencyYearly,
+  loadAgencyModeYearly,
 } from './data';
-import type { Metadata, Agency, AgencyYearly } from './types';
+import type { Metadata, Agency, AgencyYearly, AgencyModeYearly } from './types';
 import './App.css';
 
 type Step = 'filter' | 'explore';
@@ -115,6 +116,7 @@ function App() {
   const [metadata, setMetadata] = useState<Metadata | null>(null);
   const [agencies, setAgencies] = useState<Agency[]>([]);
   const [agencyYearly, setAgencyYearly] = useState<AgencyYearly[]>([]);
+  const [agencyModeYearly, setAgencyModeYearly] = useState<AgencyModeYearly[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -151,14 +153,16 @@ function App() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [meta, agencyList, yearly] = await Promise.all([
+        const [meta, agencyList, yearly, modeYearly] = await Promise.all([
           loadMetadata(),
           loadAgencies(),
           loadAgencyYearly(),
+          loadAgencyModeYearly(),
         ]);
         setMetadata(meta);
         setAgencies(agencyList);
         setAgencyYearly(yearly);
+        setAgencyModeYearly(modeYearly);
         setLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -255,6 +259,7 @@ function App() {
             homeAgency={homeAgency}
             peerAgencies={peerAgencies}
             agencyYearly={agencyYearly}
+            agencyModeYearly={agencyModeYearly}
             metadata={metadata}
             onBack={handleBack}
             onStartOver={handleStartOver}

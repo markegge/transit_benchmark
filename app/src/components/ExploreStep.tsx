@@ -13,7 +13,7 @@ import {
   Cell,
   LabelList,
 } from 'recharts';
-import type { Agency, AgencyYearly, Metadata } from '../types';
+import type { Agency, AgencyYearly, AgencyModeYearly, Metadata } from '../types';
 import { formatNumber, formatCurrency, formatPercent } from '../data';
 import './ExploreStep.css';
 
@@ -21,6 +21,7 @@ interface Props {
   homeAgency: Agency;
   peerAgencies: Agency[];
   agencyYearly: AgencyYearly[];
+  agencyModeYearly: AgencyModeYearly[];
   metadata: Metadata;
   onBack: () => void;
   onStartOver: () => void;
@@ -99,12 +100,14 @@ export function ExploreStep({
   homeAgency,
   peerAgencies,
   agencyYearly,
+  agencyModeYearly,
   metadata,
   onBack,
   onStartOver,
 }: Props) {
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>('ridership');
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
+  const [selectedModes, setSelectedModes] = useState<string[]>([]);
 
   // All agencies = home + peers
   const allAgencies = useMemo(
@@ -117,11 +120,78 @@ export function ExploreStep({
     [allAgencies]
   );
 
-  // Filter yearly data for selected agencies
-  const filteredYearly = useMemo(
-    () => agencyYearly.filter((ay) => agencyIds.has(ay.ntd_id)),
-    [agencyYearly, agencyIds]
-  );
+  // Modes available across selected agencies
+  const availableModes = useMemo(() => {
+    const modeSet = new Set<string>();
+    allAgencies.forEach((a) => a.modes.forEach((m) => modeSet.add(m)));
+    return Array.from(modeSet).sort((a, b) => {
+      const nameA = metadata.mode_names[a] || a;
+      const nameB = metadata.mode_names[b] || b;
+      return nameA.localeCompare(nameB);
+    });
+  }, [allAgencies, metadata.mode_names]);
+
+  const toggleMode = (mode: string) => {
+    setSelectedModes((prev) =>
+      prev.includes(mode) ? prev.filter((m) => m !== mode) : [...prev, mode]
+    );
+  };
+
+  // Filter yearly data for selected agencies, aggregating by mode if needed
+  const filteredYearly = useMemo(() => {
+    if (selectedModes.length === 0) {
+      // No mode filter - use aggregate agency yearly data
+      return agencyYearly.filter((ay) => agencyIds.has(ay.ntd_id));
+    }
+
+    // Filter mode-yearly data and aggregate across selected modes per agency/year
+    const modeData = agencyModeYearly.filter(
+      (amy) => agencyIds.has(amy.ntd_id) && selectedModes.includes(amy.mode)
+    );
+
+    // Group by ntd_id + year and sum
+    const grouped = new Map<string, AgencyYearly>();
+    for (const row of modeData) {
+      const key = `${row.ntd_id}-${row.report_year}`;
+      const existing = grouped.get(key);
+      if (existing) {
+        existing.unlinked_passenger_trips += row.unlinked_passenger_trips;
+        existing.total_operating_expenses += row.total_operating_expenses;
+        existing.fare_revenues_earned += row.fare_revenues_earned;
+        existing.vehicle_revenue_hours += row.vehicle_revenue_hours;
+        existing.vehicle_revenue_miles += row.vehicle_revenue_miles;
+      } else {
+        // Find population from the full yearly data for rides_per_capita
+        const fullRecord = agencyYearly.find(
+          (ay) => ay.ntd_id === row.ntd_id && ay.report_year === row.report_year
+        );
+        grouped.set(key, {
+          ntd_id: row.ntd_id,
+          report_year: row.report_year,
+          agency: row.agency,
+          unlinked_passenger_trips: row.unlinked_passenger_trips,
+          total_operating_expenses: row.total_operating_expenses,
+          fare_revenues_earned: row.fare_revenues_earned,
+          vehicle_revenue_hours: row.vehicle_revenue_hours,
+          vehicle_revenue_miles: row.vehicle_revenue_miles,
+          agency_voms: null,
+          primary_uza_population: fullRecord?.primary_uza_population ?? null,
+          rides_per_capita: null, // will be calculated below
+        });
+      }
+    }
+
+    // Calculate rides_per_capita for aggregated records
+    for (const record of grouped.values()) {
+      if (record.primary_uza_population && record.primary_uza_population > 0) {
+        record.rides_per_capita = Math.round(
+          (record.unlinked_passenger_trips / record.primary_uza_population) * 100
+        ) / 100;
+      }
+    }
+
+    return Array.from(grouped.values());
+  }, [agencyYearly, agencyModeYearly, agencyIds, selectedModes]);
 
   // Trend chart data - pivot by year
   const trendData = useMemo(() => {
@@ -207,6 +277,25 @@ export function ExploreStep({
             onClick={() => setSelectedMetric(key)}
           >
             {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mode-selector">
+        <span>Transit Modes:</span>
+        <button
+          className={selectedModes.length === 0 ? 'active' : ''}
+          onClick={() => setSelectedModes([])}
+        >
+          All Modes
+        </button>
+        {availableModes.map((mode) => (
+          <button
+            key={mode}
+            className={selectedModes.includes(mode) ? 'active' : ''}
+            onClick={() => toggleMode(mode)}
+          >
+            {metadata.mode_names[mode] || mode}
           </button>
         ))}
       </div>
@@ -312,7 +401,7 @@ export function ExploreStep({
 
         {/* Summary Table */}
         <div className="chart-card">
-          <h3>Agency Summary ({metadata.latest_year})</h3>
+          <h3>Agency Summary ({metadata.latest_year}){selectedModes.length > 0 && ` — ${selectedModes.map((m) => metadata.mode_names[m] || m).join(', ')}`}</h3>
           <div className="summary-table-container">
             <table className="summary-table">
               <thead>
@@ -326,22 +415,33 @@ export function ExploreStep({
                 </tr>
               </thead>
               <tbody>
-                {allAgencies.map((agency) => (
-                  <tr
-                    key={agency.ntd_id}
-                    className={agency.ntd_id === homeAgency.ntd_id ? 'home-row' : ''}
-                  >
-                    <td className="agency-name-cell">
-                      {agency.ntd_id === homeAgency.ntd_id && <span className="home-badge">HOME</span>}
-                      {agency.agency.length > 25 ? agency.agency.slice(0, 25) + '...' : agency.agency}
-                    </td>
-                    <td>{formatNumber(agency.unlinked_passenger_trips)}</td>
-                    <td>{formatCurrency(agency.total_operating_expenses)}</td>
-                    <td>{formatCurrency(agency.cost_per_trip)}</td>
-                    <td>{formatPercent(agency.farebox_recovery)}</td>
-                    <td>{agency.rides_per_capita?.toFixed(1) ?? '—'}</td>
-                  </tr>
-                ))}
+                {allAgencies.map((agency) => {
+                  const record = filteredYearly.find(
+                    (fy) => fy.ntd_id === agency.ntd_id && fy.report_year === metadata.latest_year
+                  );
+                  const trips = record?.unlinked_passenger_trips ?? 0;
+                  const expenses = record?.total_operating_expenses ?? 0;
+                  const fare = record?.fare_revenues_earned ?? 0;
+                  const costPerTrip = trips > 0 ? expenses / trips : null;
+                  const fareboxRecovery = expenses > 0 ? fare / expenses : null;
+                  const ridesPerCapita = record?.rides_per_capita ?? null;
+                  return (
+                    <tr
+                      key={agency.ntd_id}
+                      className={agency.ntd_id === homeAgency.ntd_id ? 'home-row' : ''}
+                    >
+                      <td className="agency-name-cell">
+                        {agency.ntd_id === homeAgency.ntd_id && <span className="home-badge">HOME</span>}
+                        {agency.agency.length > 25 ? agency.agency.slice(0, 25) + '...' : agency.agency}
+                      </td>
+                      <td>{formatNumber(trips)}</td>
+                      <td>{formatCurrency(expenses)}</td>
+                      <td>{formatCurrency(costPerTrip)}</td>
+                      <td>{formatPercent(fareboxRecovery)}</td>
+                      <td>{ridesPerCapita?.toFixed(1) ?? '—'}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
