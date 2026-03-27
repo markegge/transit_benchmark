@@ -1,0 +1,16 @@
+{
+  "name": "Transit Peers",
+  "short_name": "Transit Peers",
+  "description": "Compare and benchmark US transit agency performance using National Transit Database data.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#1e3a8a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

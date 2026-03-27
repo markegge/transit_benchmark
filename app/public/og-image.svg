@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a8a"/>
+      <stop offset="100%" style="stop-color:#1e40af"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.08" stroke="white" stroke-width="1">
+    <line x1="0" y1="200" x2="1200" y2="200"/>
+    <line x1="0" y1="300" x2="1200" y2="300"/>
+    <line x1="0" y1="400" x2="1200" y2="400"/>
+    <line x1="300" y1="0" x2="300" y2="630"/>
+    <line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="900" y1="0" x2="900" y2="630"/>
+  </g>
+
+  <!-- Decorative chart lines -->
+  <polyline points="80,450 200,420 320,380 440,350 560,280 680,250 800,200 920,180" fill="none" stroke="#60a5fa" stroke-width="3" opacity="0.5"/>
+  <polyline points="80,480 200,460 320,440 440,430 560,390 680,360 800,330 920,310" fill="none" stroke="#93c5fd" stroke-width="2" opacity="0.35"/>
+  <polyline points="80,500 200,490 320,470 440,465 560,440 680,430 800,410 920,390" fill="none" stroke="#bfdbfe" stroke-width="2" opacity="0.25"/>
+
+  <!-- Bus icon (enlarged from favicon) -->
+  <g transform="translate(920, 120) scale(5)">
+    <rect x="4" y="6" width="24" height="18" rx="4" fill="white"/>
+    <rect x="7" y="9" width="7" height="5" rx="1" fill="#93c5fd"/>
+    <rect x="18" y="9" width="7" height="5" rx="1" fill="#93c5fd"/>
+    <rect x="4" y="17" width="24" height="3" fill="#bfdbfe"/>
+    <circle cx="10" cy="26" r="2.5" fill="white"/>
+    <circle cx="22" cy="26" r="2.5" fill="white"/>
+    <circle cx="10" cy="26" r="1" fill="#93c5fd"/>
+    <circle cx="22" cy="26" r="1" fill="#93c5fd"/>
+  </g>
+
+  <!-- Title -->
+  <text x="80" y="200" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="700" fill="white">Transit Peers</text>
+
+  <!-- Subtitle -->
+  <text x="80" y="260" font-family="system-ui, -apple-system, sans-serif" font-size="30" fill="#93c5fd">Compare US Transit Agency Performance</text>
+
+  <!-- Features -->
+  <text x="80" y="340" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#bfdbfe">1,000+ agencies  |  2019-2024  |  National Transit Database</text>
+
+  <!-- URL -->
+  <text x="80" y="570" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#60a5fa">www.transitpeers.net</text>
+</svg>
