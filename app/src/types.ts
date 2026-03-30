@@ -51,6 +51,7 @@ export interface AgencyYearly {
   fare_revenues_earned: number;
   vehicle_revenue_hours: number;
   vehicle_revenue_miles: number;
+  passenger_miles: number | null;
   agency_voms: number | null;
   primary_uza_population: number | null;
   rides_per_capita: number | null;
@@ -77,6 +78,7 @@ export interface AgencyModeYearly {
   fare_revenues_earned: number;
   vehicle_revenue_hours: number;
   vehicle_revenue_miles: number;
+  passenger_miles: number | null;
   mode_voms: number;
 }
 

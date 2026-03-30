@@ -275,6 +275,7 @@ def main():
                 "fare_revenues_earned": "sum",
                 "vehicle_revenue_hours": "sum",
                 "vehicle_revenue_miles": "sum",
+                "passenger_miles": "sum",
                 "agency_voms": "first",
                 "primary_uza_population": "first",
             }
@@ -321,6 +322,7 @@ def main():
                 "fare_revenues_earned": "sum",
                 "vehicle_revenue_hours": "sum",
                 "vehicle_revenue_miles": "sum",
+                "passenger_miles": "sum",
                 "mode_voms": "sum",
             }
         )

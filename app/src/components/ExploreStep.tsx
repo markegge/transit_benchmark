@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   Cell,
   LabelList,
+  ReferenceLine,
 } from 'recharts';
 import type { Agency, AgencyYearly, AgencyModeYearly, Metadata } from '../types';
 import { formatNumber, formatCurrency, formatPercent } from '../data';
@@ -35,18 +36,53 @@ type MetricKey =
   | 'vehicle_miles'
   | 'cost_per_trip'
   | 'farebox_recovery'
-  | 'rides_per_capita';
+  | 'rides_per_capita'
+  | 'vrm_per_capita'
+  | 'vrh_per_capita'
+  | 'pmt_per_vrm'
+  | 'pmt_per_vrh'
+  | 'pmt_per_capita';
 
 const METRICS: { key: MetricKey; label: string }[] = [
   { key: 'ridership', label: 'Ridership' },
   { key: 'expenses', label: 'Operating Expenses' },
   { key: 'fare_revenue', label: 'Fare Revenue' },
-  { key: 'vehicle_hours', label: 'Vehicle Revenue Hours' },
-  { key: 'vehicle_miles', label: 'Vehicle Revenue Miles' },
+  { key: 'vehicle_hours', label: 'Vehicle Rev. Hours' },
+  { key: 'vehicle_miles', label: 'Vehicle Rev. Miles' },
   { key: 'cost_per_trip', label: 'Cost per Trip' },
   { key: 'farebox_recovery', label: 'Farebox Recovery' },
   { key: 'rides_per_capita', label: 'Rides per Capita' },
+  { key: 'vrm_per_capita', label: 'VRM per Capita' },
+  { key: 'vrh_per_capita', label: 'VRH per Capita' },
+  { key: 'pmt_per_vrm', label: 'PMT per VRM' },
+  { key: 'pmt_per_vrh', label: 'PMT per VRH' },
+  { key: 'pmt_per_capita', label: 'PMT per Capita' },
 ];
+
+// STIC incentive thresholds (FY 2025) — applies to small UZAs (50k–199,999 population)
+// Source: FTA Section 5307 STIC formula, FY 2025 apportionment
+const STIC_THRESHOLDS: Partial<Record<MetricKey, number>> = {
+  pmt_per_vrm:    4.358,   // Factor 1: PMT / Vehicle Revenue Mile
+  pmt_per_vrh:    73.552,  // Factor 2: PMT / Vehicle Revenue Hour
+  vrm_per_capita: 10.196,  // Factor 3: Vehicle Revenue Miles / Capita
+  vrh_per_capita: 0.641,   // Factor 4: Vehicle Revenue Hours / Capita
+  pmt_per_capita: 50.268,  // Factor 5: Passenger Miles / Capita
+  rides_per_capita: 8.017, // Factor 6: Unlinked Passenger Trips / Capita
+};
+
+const STIC_FACTOR_LABELS: Partial<Record<MetricKey, string>> = {
+  pmt_per_vrm:    'STIC Factor 1',
+  pmt_per_vrh:    'STIC Factor 2',
+  vrm_per_capita: 'STIC Factor 3',
+  vrh_per_capita: 'STIC Factor 4',
+  pmt_per_capita: 'STIC Factor 5',
+  rides_per_capita: 'STIC Factor 6',
+};
+
+// Small UZA = 50,000–199,999 population (STIC-eligible range)
+function isSmallUza(population: number | null): boolean {
+  return population !== null && population >= 50_000 && population <= 199_999;
+}
 
 const COLORS = [
   '#dc2626', // Home agency - red (stands out)
@@ -57,6 +93,8 @@ const COLORS = [
 ];
 
 function getYearlyValue(record: AgencyYearly, metric: MetricKey): number {
+  const pmt = record.passenger_miles ?? 0;
+  const pop = record.primary_uza_population ?? 0;
   switch (metric) {
     case 'ridership':
       return record.unlinked_passenger_trips;
@@ -78,6 +116,20 @@ function getYearlyValue(record: AgencyYearly, metric: MetricKey): number {
         : 0;
     case 'rides_per_capita':
       return record.rides_per_capita ?? 0;
+    case 'vrm_per_capita':
+      return pop > 0 ? record.vehicle_revenue_miles / pop : 0;
+    case 'vrh_per_capita':
+      return pop > 0 ? record.vehicle_revenue_hours / pop : 0;
+    case 'pmt_per_vrm':
+      return pmt > 0 && record.vehicle_revenue_miles > 0
+        ? pmt / record.vehicle_revenue_miles
+        : 0;
+    case 'pmt_per_vrh':
+      return pmt > 0 && record.vehicle_revenue_hours > 0
+        ? pmt / record.vehicle_revenue_hours
+        : 0;
+    case 'pmt_per_capita':
+      return pmt > 0 && pop > 0 ? pmt / pop : 0;
   }
 }
 
@@ -90,7 +142,12 @@ function formatMetricValue(value: number, metric: MetricKey): string {
     case 'farebox_recovery':
       return `${value.toFixed(1)}%`;
     case 'rides_per_capita':
-      return value.toFixed(1);
+    case 'vrm_per_capita':
+    case 'vrh_per_capita':
+    case 'pmt_per_vrm':
+    case 'pmt_per_vrh':
+    case 'pmt_per_capita':
+      return value.toFixed(3);
     default:
       return formatNumber(value);
   }
@@ -108,6 +165,7 @@ export function ExploreStep({
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>('ridership');
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
   const [selectedModes, setSelectedModes] = useState<string[]>([]);
+  const [showSticThresholds, setShowSticThresholds] = useState(false);
 
   // All agencies = home + peers
   const allAgencies = useMemo(
@@ -160,6 +218,7 @@ export function ExploreStep({
         existing.fare_revenues_earned += row.fare_revenues_earned;
         existing.vehicle_revenue_hours += row.vehicle_revenue_hours;
         existing.vehicle_revenue_miles += row.vehicle_revenue_miles;
+        existing.passenger_miles = (existing.passenger_miles ?? 0) + (row.passenger_miles ?? 0);
       } else {
         // Find population from the full yearly data for rides_per_capita
         const fullRecord = agencyYearly.find(
@@ -174,6 +233,7 @@ export function ExploreStep({
           fare_revenues_earned: row.fare_revenues_earned,
           vehicle_revenue_hours: row.vehicle_revenue_hours,
           vehicle_revenue_miles: row.vehicle_revenue_miles,
+          passenger_miles: row.passenger_miles ?? null,
           agency_voms: null,
           primary_uza_population: fullRecord?.primary_uza_population ?? null,
           rides_per_capita: null, // will be calculated below
@@ -245,6 +305,10 @@ export function ExploreStep({
 
   const metricLabel = METRICS.find((m) => m.key === selectedMetric)?.label || selectedMetric;
 
+  const sticThreshold = STIC_THRESHOLDS[selectedMetric];
+  const sticEligible = isSmallUza(homeAgency.primary_uza_population);
+  const sticLineActive = showSticThresholds && sticEligible && sticThreshold !== undefined;
+
   return (
     <div className="explore-step">
       <div className="explore-header">
@@ -279,6 +343,15 @@ export function ExploreStep({
             {label}
           </button>
         ))}
+        {sticEligible && (
+          <button
+            className={`stic-toggle${showSticThresholds ? ' stic-toggle-active' : ''}`}
+            onClick={() => setShowSticThresholds((v) => !v)}
+            title="Show STIC incentive threshold on the chart (applies to small UZA agencies, 50k–199k population)"
+          >
+            {showSticThresholds ? '★ STIC thresholds on' : '☆ Show STIC thresholds'}
+          </button>
+        )}
       </div>
 
       <div className="mode-selector">
@@ -304,7 +377,7 @@ export function ExploreStep({
         {/* Trend Line Chart - Main visualization */}
         <div className="chart-card chart-card-full">
           <h3>{metricLabel} Over Time</h3>
-          <ResponsiveContainer width="100%" height={563}>
+          <ResponsiveContainer width="100%" height={sticLineActive ? 583 : 563}>
             <LineChart
               data={trendData}
               margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
@@ -354,8 +427,30 @@ export function ExploreStep({
                   </Line>
                 );
               })}
+              {sticLineActive && sticThreshold !== undefined && (
+                <ReferenceLine
+                  y={sticThreshold}
+                  stroke="#E8734A"
+                  strokeWidth={2}
+                  strokeDasharray="8 4"
+                  label={{
+                    value: `${STIC_FACTOR_LABELS[selectedMetric]} threshold: ${formatMetricValue(sticThreshold, selectedMetric)} (FY 2025)`,
+                    position: 'insideTopRight',
+                    fill: '#E8734A',
+                    fontSize: 11,
+                    fontWeight: 600,
+                  }}
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
+          {sticLineActive && (
+            <p className="stic-footnote">
+              * STIC threshold shown is the FY 2025 value ({STIC_FACTOR_LABELS[selectedMetric]}: {formatMetricValue(sticThreshold!, selectedMetric)}).
+              Thresholds are recalculated annually by the FTA based on the national average for mid-size UZAs (200,000–999,999 population).
+              STIC incentives apply to small UZAs (50,000–199,999 population) that meet or exceed these thresholds.
+            </p>
+          )}
         </div>
 
         {/* Latest Year Comparison Bar Chart */}

@@ -75,6 +75,45 @@
   color: var(--color-coral);
 }
 
+/* STIC threshold toggle */
+.stic-toggle {
+  padding: 0.5rem 1rem;
+  border: 1.5px solid var(--color-coral);
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: var(--color-coral);
+  font-weight: 600;
+  transition: all 0.15s;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.stic-toggle:hover {
+  background: var(--color-coral-light);
+}
+
+.stic-toggle-active {
+  background: var(--color-coral);
+  color: white;
+}
+
+.stic-toggle-active:hover {
+  background: #d4603a;
+}
+
+/* STIC footnote below line chart */
+.stic-footnote {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-warm-gray);
+  line-height: 1.5;
+  border-top: 1px solid var(--color-sand);
+  padding-top: 0.625rem;
+}
+
 .metric-selector {
   display: flex;
   align-items: center;
