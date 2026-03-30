@@ -2,15 +2,19 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f8fafc;
+  background: var(--color-cream);
 }
 
+/* ── Header ─────────────────────────────────────────────────────────────── */
 .app-header {
-  background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-  color: white;
-  padding: 1.5rem 2rem;
-  text-align: center;
-  position: relative;
+  background: white;
+  border-bottom: 1px solid var(--color-sand);
+  padding: 0 1.5rem;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
 }
 
 .header-home-link {
@@ -27,48 +31,58 @@
 }
 
 .header-logo {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
 }
 
 .app-header h1 {
   margin: 0;
-  font-size: 1.75rem;
-  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-coral);
+  line-height: 1;
 }
 
 .app-header .subtitle {
-  margin: 0.25rem 0 0;
-  opacity: 0.9;
-  font-size: 0.875rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-warm-gray);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-spacer {
+  flex: 1;
 }
 
 .app-main {
   flex: 1;
-  background: #f8fafc;
+  background: var(--color-cream);
 }
 
 .app-footer {
   text-align: center;
-  padding: 1.5rem;
-  color: #64748b;
+  padding: 1.25rem 1.5rem;
+  color: var(--color-warm-gray);
   font-size: 0.8125rem;
   background: white;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-sand);
 }
 
 .app-footer p {
   margin: 0;
 }
 
-/* Loading Screen */
+/* ── Loading Screen ─────────────────────────────────────────────────────── */
 .loading-screen {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: var(--color-cream);
 }
 
 .loading-content {
@@ -78,32 +92,30 @@
 .spinner {
   width: 40px;
   height: 40px;
-  border: 3px solid #e2e8f0;
-  border-top-color: #3b82f6;
+  border: 3px solid var(--color-sand);
+  border-top-color: var(--color-coral);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 .loading-content p {
-  color: #64748b;
+  color: var(--color-warm-gray);
   font-size: 1rem;
 }
 
-/* Error Screen */
+/* ── Error Screen ───────────────────────────────────────────────────────── */
 .error-screen {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: var(--color-cream);
 }
 
 .error-screen p {
@@ -114,49 +126,48 @@
 
 .error-screen button {
   padding: 0.5rem 1.5rem;
-  background: #3b82f6;
+  background: var(--color-coral);
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 0.875rem;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
 }
 
 .error-screen button:hover {
-  background: #2563eb;
+  background: #d4603a;
 }
 
-/* Help Button */
+/* ── Help Button ────────────────────────────────────────────────────────── */
 .help-button {
-  position: absolute;
-  right: 1.5rem;
-  top: 50%;
-  transform: translateY(-50%);
   width: 32px;
   height: 32px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 8px;
+  border: none;
   background: transparent;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
+  color: var(--color-warm-gray);
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, border-color 0.2s;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
 }
 
 .help-button:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: white;
+  background: var(--color-coral-light);
+  color: var(--color-coral);
 }
 
-/* Help Modal */
+/* ── Help Modal ─────────────────────────────────────────────────────────── */
 .help-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(61, 46, 34, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -166,55 +177,93 @@
 
 .help-modal {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  max-width: 600px;
+  border-radius: 1rem;
+  box-shadow: 0 8px 32px rgba(61, 46, 34, 0.14);
+  max-width: 560px;
   width: 100%;
   max-height: 80vh;
-  overflow-y: auto;
-  padding: 2rem;
+  overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.help-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-sand);
+  flex-shrink: 0;
+}
+
+.help-modal-header h2 {
+  margin: 0;
+  font-family: 'Nunito', sans-serif;
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--color-dark-brown);
 }
 
 .help-modal-close {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
-  font-size: 1.5rem;
-  color: #64748b;
+  font-size: 1.25rem;
+  color: var(--color-warm-gray);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: color 0.15s;
 }
 
 .help-modal-close:hover {
-  background: #f1f5f9;
-  color: #1e293b;
+  color: var(--color-dark-brown);
 }
 
-.help-modal h2 {
-  margin: 0 0 1.25rem;
-  font-size: 1.25rem;
-  color: #1e293b;
+.help-modal-body {
+  padding: 1.25rem 1.5rem;
+  overflow-y: auto;
+  font-size: 0.875rem;
+  color: var(--color-warm-gray);
+  line-height: 1.6;
 }
 
 .help-modal h3 {
   margin: 1.25rem 0 0.5rem;
-  font-size: 1rem;
-  color: #1e3a8a;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--color-dark-brown);
+}
+
+.help-modal h3:first-child {
+  margin-top: 0;
 }
 
 .help-modal p,
 .help-modal li {
   font-size: 0.875rem;
   line-height: 1.6;
-  color: #334155;
+  color: var(--color-warm-gray);
+}
+
+.help-modal strong {
+  color: var(--color-dark-brown);
+  font-weight: 600;
+}
+
+.help-modal a {
+  color: var(--color-teal);
+  text-decoration: none;
+}
+
+.help-modal a:hover {
+  text-decoration: underline;
 }
 
 .help-modal ul,
@@ -227,11 +276,41 @@
   margin-bottom: 0.35rem;
 }
 
-/* Video Modal */
+.help-modal-divider {
+  border: none;
+  border-top: 1px solid var(--color-sand);
+  margin: 1rem 0;
+}
+
+.transit-tools-section {
+  background: var(--color-cream);
+  border: 1px solid var(--color-sand);
+  border-radius: 0.625rem;
+  padding: 0.875rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.transit-tools-section p {
+  margin: 0;
+  color: var(--color-warm-gray);
+  font-size: 0.8125rem;
+}
+
+.transit-tools-section a {
+  color: var(--color-coral);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.transit-tools-section a:hover {
+  text-decoration: underline;
+}
+
+/* ── Video Modal ────────────────────────────────────────────────────────── */
 .video-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(61, 46, 34, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -245,9 +324,9 @@
   max-width: 800px;
   aspect-ratio: 16 / 9;
   background: black;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 60px rgba(61, 46, 34, 0.4);
 }
 
 .video-modal iframe {
@@ -268,7 +347,7 @@
   border: none;
   background: rgba(255, 255, 255, 0.9);
   font-size: 1.5rem;
-  color: #1e293b;
+  color: var(--color-dark-brown);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -282,25 +361,23 @@
   background: white;
 }
 
-/* Responsive header */
+/* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .app-header {
-    padding: 1rem;
+    padding: 0 1rem;
+    gap: 0.75rem;
   }
 
   .app-header h1 {
-    font-size: 1.25rem;
+    font-size: 1.125rem;
   }
 
   .header-logo {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
   }
 
-  .help-button {
-    right: 0.75rem;
-    width: 28px;
-    height: 28px;
-    font-size: 0.875rem;
+  .app-header .subtitle {
+    display: none;
   }
 }

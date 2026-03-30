@@ -47,19 +47,18 @@ function HelpModal({ onClose, onPlayVideo }: { onClose: () => void; onPlayVideo:
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       <div className="help-modal">
-        <button className="help-modal-close" onClick={onClose}>×</button>
-        <h2>How to Use Transit Peers</h2>
-
-        <section>
+        <div className="help-modal-header">
+          <h2>How to Use Transit Peers</h2>
+          <button className="help-modal-close" onClick={onClose}>×</button>
+        </div>
+        <div className="help-modal-body">
           <h3>Getting Started</h3>
           <ol>
             <li><strong>Select your home agency</strong> — Search by name or NTD ID to pick the transit agency you want to benchmark.</li>
             <li><strong>Filter and rank peers</strong> — Narrow the list by reporter type, transit modes, or states, then use similarity criteria to find the most comparable agencies.</li>
             <li><strong>Compare performance</strong> — View side-by-side charts and tables for your home agency and selected peers across multiple years.</li>
           </ol>
-        </section>
 
-        <section>
           <h3>Peer Selection</h3>
           <p>Filters let you narrow the agency list before ranking:</p>
           <ul>
@@ -67,22 +66,22 @@ function HelpModal({ onClose, onPlayVideo }: { onClose: () => void; onPlayVideo:
             <li><strong>Reporter type</strong> and <strong>states</strong> use OR logic — an agency matching <em>any</em> selected value will appear.</li>
           </ul>
           <p>Similarity ranking scores agencies across criteria like population, ridership, operating cost per trip, and more. Scores are log-normalized so agencies of very different sizes can still be compared meaningfully.</p>
-        </section>
 
-        <section>
           <h3>Performance Comparison</h3>
           <p>The Explore step shows time-series charts for metrics including ridership, farebox recovery, cost per trip, and rides per capita. Hover over a chart to see values for each agency. You can also export the data as CSV.</p>
-        </section>
 
-        <section>
           <h3>Quick Start Video</h3>
           <p><a href="#" onClick={(e) => { e.preventDefault(); onClose(); onPlayVideo(); }}>Watch the quick start video</a> for a walkthrough of how to use Transit Peers.</p>
-        </section>
 
-        <section>
           <h3>About the Data</h3>
           <p>All data comes from the <strong>National Transit Database (NTD)</strong> published by the Federal Transit Administration. Coverage spans 2019–2024 and includes agencies that report ridership data. Some smaller agencies may be excluded if they do not report to the NTD.</p>
-        </section>
+
+          <hr className="help-modal-divider" />
+          <h3>Transit Tools Suite</h3>
+          <div className="transit-tools-section">
+            <p>Transit Peers is part of the <strong>Transit Tools</strong> suite. Also available: <a href="https://markegge.github.io/gtfs-builder/" target="_blank" rel="noopener noreferrer">GTFS Builder</a> — a browser-based editor for creating and editing GTFS transit feeds.</p>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -219,20 +218,22 @@ function App() {
       <header className="app-header">
         <a className="header-home-link" href="#" onClick={(e) => { e.preventDefault(); handleStartOver(); }}>
           <svg className="header-logo" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <rect x="4" y="6" width="24" height="18" rx="4" fill="white"/>
-            <rect x="7" y="9" width="7" height="5" rx="1" fill="#93c5fd"/>
-            <rect x="18" y="9" width="7" height="5" rx="1" fill="#93c5fd"/>
-            <rect x="4" y="17" width="24" height="3" fill="#bfdbfe"/>
-            <circle cx="10" cy="26" r="2.5" fill="white"/>
-            <circle cx="22" cy="26" r="2.5" fill="white"/>
-            <circle cx="10" cy="26" r="1" fill="#93c5fd"/>
-            <circle cx="22" cy="26" r="1" fill="#93c5fd"/>
+            <rect width="32" height="32" rx="8" fill="#E8734A"/>
+            <rect x="4" y="8" width="24" height="14" rx="3" fill="#FFF8F0"/>
+            <rect x="7" y="11" width="7" height="4" rx="1" fill="#E8734A" opacity="0.7"/>
+            <rect x="18" y="11" width="7" height="4" rx="1" fill="#E8734A" opacity="0.7"/>
+            <rect x="4" y="16" width="24" height="2.5" fill="#FDECE5"/>
+            <circle cx="10" cy="24" r="2.5" fill="#FFF8F0"/>
+            <circle cx="22" cy="24" r="2.5" fill="#FFF8F0"/>
+            <circle cx="10" cy="24" r="1" fill="#E8734A"/>
+            <circle cx="22" cy="24" r="1" fill="#E8734A"/>
           </svg>
           <h1>Transit Peers</h1>
         </a>
         <p className="subtitle">
-          NTD Transit Benchmarking — Compare {metadata.total_agencies.toLocaleString()} agencies | {metadata.years[0]}-{metadata.years[metadata.years.length - 1]}
+          NTD Benchmarking — {metadata.total_agencies.toLocaleString()} agencies | {metadata.years[0]}–{metadata.years[metadata.years.length - 1]}
         </p>
+        <div className="header-spacer" />
         <button className="help-button" onClick={() => setShowHelp(true)} title="Help">?</button>
       </header>
 

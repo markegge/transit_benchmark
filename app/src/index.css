@@ -3,7 +3,17 @@
 }
 
 :root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --color-cream: #FFF8F0;
+  --color-sand: #F5E6D3;
+  --color-warm-gray: #8B7E74;
+  --color-brown: #5C4A3A;
+  --color-dark-brown: #3D2E22;
+  --color-coral: #E8734A;
+  --color-coral-light: #FDECE5;
+  --color-teal: #2A9D8F;
+  --color-teal-light: #E0F5F2;
+
+  font-family: 'Inter', system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
