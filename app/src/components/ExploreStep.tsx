@@ -309,6 +309,14 @@ export function ExploreStep({
   const sticEligible = isSmallUza(homeAgency.primary_uza_population);
   const sticLineActive = showSticThresholds && sticEligible && sticThreshold !== undefined;
 
+  // Check if home agency has any PMT data (some agencies don't report to NTD)
+  const homeHasPmtData = useMemo(() => {
+    const pmtMetrics: MetricKey[] = ['pmt_per_vrm', 'pmt_per_vrh', 'pmt_per_capita'];
+    if (!pmtMetrics.includes(selectedMetric)) return true;
+    const homeRecords = agencyYearly.filter((ay) => ay.ntd_id === homeAgency.ntd_id);
+    return homeRecords.some((r) => (r.passenger_miles ?? 0) > 0);
+  }, [selectedMetric, agencyYearly, homeAgency.ntd_id]);
+
   return (
     <div className="explore-step">
       <div className="explore-header">
@@ -390,7 +398,14 @@ export function ExploreStep({
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="year" />
-              <YAxis tickFormatter={(val) => formatMetricValue(val, selectedMetric)} />
+              <YAxis
+                tickFormatter={(val) => formatMetricValue(val, selectedMetric)}
+                domain={
+                  sticLineActive && sticThreshold !== undefined
+                    ? [0, (dataMax: number) => Math.max(dataMax, sticThreshold) * 1.1]
+                    : [0, 'auto']
+                }
+              />
               <Legend formatter={renderLegendText} wrapperStyle={{ paddingTop: 20 }} />
               {allAgencies.map((agency, index) => {
                 const isHome = agency.ntd_id === homeAgency.ntd_id;
@@ -449,6 +464,12 @@ export function ExploreStep({
               * STIC threshold shown is the FY 2025 value ({STIC_FACTOR_LABELS[selectedMetric]}: {formatMetricValue(sticThreshold!, selectedMetric)}).
               Thresholds are recalculated annually by the FTA based on the national average for mid-size UZAs (200,000–999,999 population).
               STIC incentives apply to small UZAs (50,000–199,999 population) that meet or exceed these thresholds.
+              {!homeHasPmtData && ' Note: this agency does not report Passenger Miles Traveled (PMT) to the NTD, so values shown are zero.'}
+            </p>
+          )}
+          {showSticThresholds && sticEligible && sticThreshold === undefined && (
+            <p className="stic-footnote">
+              ℹ This metric does not have a STIC threshold. STIC thresholds apply to the six per-capita and service-efficiency metrics (Rides per Capita, VRM per Capita, VRH per Capita, PMT per VRM, PMT per VRH, PMT per Capita).
             </p>
           )}
         </div>
