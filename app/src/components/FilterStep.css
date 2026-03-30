@@ -277,9 +277,117 @@
   gap: 0.375rem;
 }
 
-.filter-chips.scrollable {
-  max-height: 120px;
+.filter-chips.states-chips {
+  max-height: 200px;
   overflow-y: auto;
+}
+
+/* Modes multi-select dropdown */
+.modes-dropdown-container {
+  position: relative;
+}
+
+.modes-dropdown-trigger {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--color-sand);
+  background: white;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--color-brown);
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.modes-dropdown-trigger:hover,
+.modes-dropdown-trigger:focus {
+  border-color: var(--color-teal);
+  outline: none;
+}
+
+.modes-dropdown-trigger.has-selection {
+  border-color: var(--color-teal);
+  color: var(--color-teal);
+  font-weight: 500;
+}
+
+.modes-dropdown-arrow {
+  font-size: 0.625rem;
+  color: var(--color-warm-gray);
+  margin-left: 0.5rem;
+}
+
+.modes-dropdown-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid var(--color-sand);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(61, 46, 34, 0.12);
+  z-index: 200;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.25rem 0;
+}
+
+.modes-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: var(--color-brown);
+  transition: background 0.1s;
+}
+
+.modes-dropdown-item:hover {
+  background: var(--color-cream);
+}
+
+.modes-dropdown-item input[type="checkbox"] {
+  accent-color: var(--color-teal);
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.modes-selected-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.375rem;
+}
+
+.mode-selected-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  background: var(--color-teal-light);
+  color: var(--color-teal);
+  border-radius: 4px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+.mode-selected-chip button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-teal);
+  font-size: 0.875rem;
+  line-height: 1;
+  padding: 0;
+  display: flex;
+  align-items: center;
 }
 
 .filter-chips button {
@@ -322,15 +430,36 @@
   background: var(--color-sand);
 }
 
-.similarity-section {
-  border-top: 1px solid var(--color-sand);
-  padding-top: 1rem;
-}
-
 .helper-text {
   font-size: 0.75rem;
   color: var(--color-warm-gray);
   margin: 0 0 0.5rem;
+}
+
+/* Results Column (wraps similarity criteria + results panel) */
+.results-column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+/* Similarity criteria bar (above results) */
+.similarity-section {
+  background: white;
+  border-radius: 10px;
+  padding: 0.875rem 1rem;
+  box-shadow: 0 1px 4px rgba(61, 46, 34, 0.08);
+}
+
+.similarity-section > label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-warm-gray);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.375rem;
 }
 
 /* Results Panel */
@@ -563,7 +692,7 @@
 /* Responsive */
 @media (max-width: 1200px) {
   .filter-layout {
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 260px 1fr;
   }
 
   .selection-panel {

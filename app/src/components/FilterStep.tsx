@@ -100,15 +100,20 @@ export function FilterStep({
     new Set(initialPeerIds)
   );
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showModesDropdown, setShowModesDropdown] = useState(false);
   const [agencySearch, setAgencySearch] = useState('');
   const [videoFabDismissed, setVideoFabDismissed] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const modesDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
+      }
+      if (modesDropdownRef.current && !modesDropdownRef.current.contains(event.target as Node)) {
+        setShowModesDropdown(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -364,6 +369,21 @@ export function FilterStep({
           {/* Filter Panel */}
           <div className="filter-panel">
             <div className="filter-section">
+              <label>States (match any)</label>
+              <div className="filter-chips states-chips">
+                {metadata.states.map((state) => (
+                  <button
+                    key={state}
+                    className={filters.states.includes(state) ? 'active' : ''}
+                    onClick={() => toggleState(state)}
+                  >
+                    {state}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-section">
               <label>Reporter Type (match any)</label>
               <div className="filter-chips">
                 {metadata.reporter_types.map((type) => (
@@ -380,43 +400,54 @@ export function FilterStep({
 
             <div className="filter-section">
               <label>Transit Modes (must operate ALL selected)</label>
-              <div className="filter-chips">
-                {metadata.modes.map((mode) => (
-                  <button
-                    key={mode}
-                    className={filters.modes.includes(mode) ? 'active' : ''}
-                    onClick={() => toggleMode(mode)}
-                    title={metadata.mode_names[mode]}
-                  >
-                    {metadata.mode_names[mode] || mode}
-                  </button>
-                ))}
+              <div className="modes-dropdown-container" ref={modesDropdownRef}>
+                <button
+                  className={`modes-dropdown-trigger${filters.modes.length > 0 ? ' has-selection' : ''}`}
+                  onClick={() => setShowModesDropdown((v) => !v)}
+                >
+                  {filters.modes.length === 0
+                    ? 'Any mode'
+                    : `${filters.modes.length} mode${filters.modes.length > 1 ? 's' : ''} selected`}
+                  <span className="modes-dropdown-arrow">{showModesDropdown ? '▲' : '▼'}</span>
+                </button>
+                {showModesDropdown && (
+                  <div className="modes-dropdown-list">
+                    {metadata.modes.map((mode) => (
+                      <label key={mode} className="modes-dropdown-item">
+                        <input
+                          type="checkbox"
+                          checked={filters.modes.includes(mode)}
+                          onChange={() => toggleMode(mode)}
+                        />
+                        <span>{metadata.mode_names[mode] || mode}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-
-            <div className="filter-section">
-              <label>States (match any)</label>
-              <div className="filter-chips scrollable">
-                {metadata.states.map((state) => (
-                  <button
-                    key={state}
-                    className={filters.states.includes(state) ? 'active' : ''}
-                    onClick={() => toggleState(state)}
-                  >
-                    {state}
-                  </button>
-                ))}
-              </div>
+              {filters.modes.length > 0 && (
+                <div className="modes-selected-chips">
+                  {filters.modes.map((mode) => (
+                    <span key={mode} className="mode-selected-chip">
+                      {metadata.mode_names[mode] || mode}
+                      <button onClick={() => toggleMode(mode)}>×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <button className="clear-filters" onClick={clearFilters}>
               Clear All Filters
             </button>
+          </div>
 
-            <div className="filter-section similarity-section">
+          {/* Results Panel (with similarity criteria above) */}
+          <div className="results-column">
+            <div className="similarity-section">
               <label>Similarity Criteria</label>
               <p className="helper-text">
-                Select criteria to rank agencies by similarity to your home agency.
+                Select criteria to rank peers by similarity to your home agency.
               </p>
               <div className="filter-chips">
                 {SIMILARITY_CRITERIA.map(({ key, label }) => (
@@ -430,9 +461,7 @@ export function FilterStep({
                 ))}
               </div>
             </div>
-          </div>
 
-          {/* Results Panel */}
           <div className="results-panel">
             <div className="results-header">
               <span className="results-count">{rankedAgencies.length} potential peers</span>
@@ -503,6 +532,7 @@ export function FilterStep({
               )}
             </div>
           </div>
+          </div>{/* end results-column */}
 
           {/* Selection Summary */}
           <div className="selection-panel">
