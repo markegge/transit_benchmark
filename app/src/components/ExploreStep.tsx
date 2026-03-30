@@ -166,6 +166,7 @@ export function ExploreStep({
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
   const [selectedModes, setSelectedModes] = useState<string[]>([]);
   const [showSticThresholds, setShowSticThresholds] = useState(false);
+  const [showSticInfo, setShowSticInfo] = useState(false);
 
   // All agencies = home + peers
   const allAgencies = useMemo(
@@ -352,13 +353,23 @@ export function ExploreStep({
           </button>
         ))}
         {sticEligible && (
-          <button
-            className={`stic-toggle${showSticThresholds ? ' stic-toggle-active' : ''}`}
-            onClick={() => setShowSticThresholds((v) => !v)}
-            title="Show STIC incentive threshold on the chart (applies to small UZA agencies, 50k–199k population)"
-          >
-            {showSticThresholds ? '★ STIC thresholds on' : '☆ Show STIC thresholds'}
-          </button>
+          <div className="stic-toggle-group">
+            <button
+              className={`stic-toggle${showSticThresholds ? ' stic-toggle-active' : ''}`}
+              onClick={() => setShowSticThresholds((v) => !v)}
+              title="Show STIC incentive threshold on the chart (applies to small UZA agencies, 50k–199k population)"
+            >
+              {showSticThresholds ? '★ STIC thresholds on' : '☆ Show STIC thresholds'}
+            </button>
+            <button
+              className="stic-info-button"
+              onClick={() => setShowSticInfo(true)}
+              title="About STIC incentives"
+              aria-label="About STIC incentives"
+            >
+              ℹ
+            </button>
+          </div>
         )}
       </div>
 
@@ -465,11 +476,6 @@ export function ExploreStep({
               Thresholds are recalculated annually by the FTA based on the national average for mid-size UZAs (200,000–999,999 population).
               STIC incentives apply to small UZAs (50,000–199,999 population) that meet or exceed these thresholds.
               {!homeHasPmtData && ' Note: this agency does not report Passenger Miles Traveled (PMT) to the NTD, so values shown are zero.'}
-            </p>
-          )}
-          {showSticThresholds && sticEligible && sticThreshold === undefined && (
-            <p className="stic-footnote">
-              ℹ This metric does not have a STIC threshold. STIC thresholds apply to the six per-capita and service-efficiency metrics (Rides per Capita, VRM per Capita, VRH per Capita, PMT per VRM, PMT per VRH, PMT per Capita).
             </p>
           )}
         </div>
@@ -592,6 +598,37 @@ export function ExploreStep({
           </div>
         </div>
       </div>
+
+      {showSticInfo && (
+        <div className="stic-modal-overlay" onClick={() => setShowSticInfo(false)}>
+          <div className="stic-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="stic-modal-header">
+              <h3>About STIC Incentives</h3>
+              <button className="stic-modal-close" onClick={() => setShowSticInfo(false)} aria-label="Close">×</button>
+            </div>
+            <div className="stic-modal-body">
+              <p>
+                The <strong>Small Transit Intensive Cities (STIC)</strong> program is a federal incentive under FTA Section 5307 that rewards small urbanized areas (50,000–199,999 population) for providing high-quality transit service. Agencies in qualifying UZAs that meet or exceed performance thresholds earn a share of additional apportionment funds beyond their base formula allocation.
+              </p>
+              <p>
+                Eligibility is determined by comparing an agency's performance against the national average for mid-size UZAs (200,000–999,999 population) on six metrics: <strong>Passenger Miles per Vehicle Revenue Mile</strong>, <strong>Passenger Miles per Vehicle Revenue Hour</strong>, <strong>Vehicle Revenue Miles per Capita</strong>, <strong>Vehicle Revenue Hours per Capita</strong>, <strong>Passenger Miles per Capita</strong>, and <strong>Unlinked Passenger Trips per Capita</strong>. An agency qualifies for each factor on which it meets or exceeds the threshold, and additional funding is apportioned based on the number of factors met.
+              </p>
+              <p>
+                Thresholds are recalculated each fiscal year. The values shown here are the <strong>FY 2025</strong> thresholds. Note that some agencies do not report Passenger Miles Traveled (PMT) to the NTD, which affects eligibility for the three PMT-based factors.
+              </p>
+              <p className="stic-modal-link">
+                <a
+                  href="https://www.transit.dot.gov/funding/apportionments/small-transit-intensive-cities-formula"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  FTA STIC Formula documentation →
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
