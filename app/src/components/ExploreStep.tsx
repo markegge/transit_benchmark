@@ -167,6 +167,7 @@ export function ExploreStep({
   const [selectedModes, setSelectedModes] = useState<string[]>([]);
   const [showSticThresholds, setShowSticThresholds] = useState(false);
   const [showSticInfo, setShowSticInfo] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // All agencies = home + peers
   const allAgencies = useMemo(
@@ -336,9 +337,23 @@ export function ExploreStep({
             {peerAgencies.length > 0 && ` vs ${peerAgencies.length} peer${peerAgencies.length !== 1 ? 's' : ''}`}
           </p>
         </div>
-        <button className="download-button" onClick={handleDownload}>
-          Download CSV
-        </button>
+        <div className="header-buttons-right">
+          <button
+            className="share-button"
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href).then(() => {
+                setLinkCopied(true);
+                setTimeout(() => setLinkCopied(false), 2000);
+              });
+            }}
+            title="Copy shareable link to clipboard"
+          >
+            {linkCopied ? '✓ Link copied!' : '⎘ Share'}
+          </button>
+          <button className="download-button" onClick={handleDownload}>
+            Download CSV
+          </button>
+        </div>
       </div>
 
       <div className="metric-selector">

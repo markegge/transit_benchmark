@@ -270,6 +270,30 @@
   margin: 0;
 }
 
+.header-buttons-right {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.share-button {
+  padding: 0.5rem 1rem;
+  background: white;
+  color: var(--color-teal);
+  border: 1.5px solid var(--color-teal);
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.share-button:hover {
+  background: var(--color-teal-light);
+}
+
 .download-button {
   padding: 0.5rem 1rem;
   background: var(--color-teal);

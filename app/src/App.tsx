@@ -29,6 +29,27 @@ function deleteCookie(name: string) {
   document.cookie = `${name}=;max-age=0;path=/`;
 }
 
+function getUrlParams(): { homeId: number | null; peerIds: number[] } {
+  const params = new URLSearchParams(window.location.search);
+  const homeId = params.get('home') ? Number(params.get('home')) : null;
+  const peerIds = params.get('peers')
+    ? params.get('peers')!.split(',').map(Number).filter(Boolean)
+    : [];
+  return { homeId, peerIds };
+}
+
+function setUrlParams(homeId: number, peerIds: number[]) {
+  const params = new URLSearchParams();
+  params.set('home', String(homeId));
+  if (peerIds.length > 0) params.set('peers', peerIds.join(','));
+  const newUrl = `${window.location.pathname}?${params.toString()}`;
+  window.history.replaceState(null, '', newUrl);
+}
+
+function clearUrlParams() {
+  window.history.replaceState(null, '', window.location.pathname);
+}
+
 function HelpModal({ onClose, onPlayVideo }: { onClose: () => void; onPlayVideo: () => void }) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -126,12 +147,16 @@ function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
 
-  // Restore from cookies after agencies are loaded
+  // Restore from URL params (shareable links) or cookies after agencies are loaded
   useEffect(() => {
     if (agencies.length === 0) return;
 
-    const savedHomeId = getCookie(COOKIE_HOME_AGENCY);
-    const savedPeerIds = getCookie(COOKIE_PEER_AGENCIES);
+    // URL params take priority over cookies
+    const { homeId: urlHomeId, peerIds: urlPeerIds } = getUrlParams();
+    const savedHomeId = urlHomeId !== null ? String(urlHomeId) : getCookie(COOKIE_HOME_AGENCY);
+    const savedPeerIds = urlHomeId !== null
+      ? (urlPeerIds.length > 0 ? urlPeerIds.join(',') : null)
+      : getCookie(COOKIE_PEER_AGENCIES);
 
     if (savedHomeId) {
       const home = agencies.find((a) => a.ntd_id === Number(savedHomeId));
@@ -140,10 +165,15 @@ function App() {
         if (savedPeerIds) {
           const peerIds = savedPeerIds.split(',').map(Number);
           const peers = agencies.filter((a) => peerIds.includes(a.ntd_id));
-          if (peers.length > 0) {
-            setPeerAgencies(peers);
-            setStep('explore');
+          setPeerAgencies(peers);
+          setStep('explore');
+          // Sync URL if we restored from cookies
+          if (urlHomeId === null) {
+            setUrlParams(home.ntd_id, peers.map((p) => p.ntd_id));
           }
+        } else if (urlHomeId !== null) {
+          // Home specified in URL but no peers — still go to explore
+          setStep('explore');
         }
       }
     }
@@ -175,13 +205,15 @@ function App() {
     setHomeAgency(home);
     setPeerAgencies(peers);
     setStep('explore');
-    // Save to cookies
+    // Save to cookies and URL
     setCookie(COOKIE_HOME_AGENCY, String(home.ntd_id));
     setCookie(COOKIE_PEER_AGENCIES, peers.map((p) => p.ntd_id).join(','));
+    setUrlParams(home.ntd_id, peers.map((p) => p.ntd_id));
   };
 
   const handleBack = () => {
     setStep('filter');
+    clearUrlParams();
   };
 
   const handleStartOver = useCallback(() => {
@@ -191,6 +223,7 @@ function App() {
     setFilterKey((k) => k + 1);
     deleteCookie(COOKIE_HOME_AGENCY);
     deleteCookie(COOKIE_PEER_AGENCIES);
+    clearUrlParams();
   }, []);
 
   if (loading) {
