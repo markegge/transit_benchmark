@@ -298,11 +298,33 @@ export function ExploreStep({
   const truncateName = (name: string, maxLen = 35) =>
     name.length > maxLen ? name.slice(0, maxLen) + '...' : name;
 
-  // Custom legend formatter that bolds the home agency
+  // Build a lookup from agency name to agency object for legend tooltips
+  const agencyByName = useMemo(() => {
+    const map = new Map<string, Agency>();
+    allAgencies.forEach((a) => map.set(a.agency, a));
+    return map;
+  }, [allAgencies]);
+
+  // Consistent color map: ntd_id → color, matching trend chart index order
+  const agencyColorMap = useMemo(() => {
+    const map = new Map<number, string>();
+    allAgencies.forEach((a, i) => map.set(a.ntd_id, COLORS[i % COLORS.length]));
+    return map;
+  }, [allAgencies]);
+
+  // Custom legend formatter that bolds the home agency and adds hover tooltip
   const renderLegendText = (value: string) => {
     const isHome = value === homeAgency.agency;
     const displayName = truncateName(value);
-    return isHome ? <strong>{displayName}</strong> : displayName;
+    const agency = agencyByName.get(value);
+    const tooltip = agency
+      ? `${agency.agency}\n${agency.city}, ${agency.state}${agency.uza_name ? `\nUZA: ${agency.uza_name}` : ''}${agency.primary_uza_population ? `\nPopulation: ${agency.primary_uza_population.toLocaleString()}` : ''}`
+      : value;
+    return (
+      <span title={tooltip} style={{ cursor: 'default' }}>
+        {isHome ? <strong>{displayName}</strong> : displayName}
+      </span>
+    );
   };
 
   const metricLabel = METRICS.find((m) => m.key === selectedMetric)?.label || selectedMetric;
@@ -433,9 +455,9 @@ export function ExploreStep({
                 }
               />
               <Legend formatter={renderLegendText} wrapperStyle={{ paddingTop: 20 }} />
-              {allAgencies.map((agency, index) => {
+              {allAgencies.map((agency) => {
                 const isHome = agency.ntd_id === homeAgency.ntd_id;
-                const color = COLORS[index % COLORS.length];
+                const color = agencyColorMap.get(agency.ntd_id)!;
                 return (
                   <Line
                     key={agency.ntd_id}
@@ -525,12 +547,23 @@ export function ExploreStep({
                 labelFormatter={(_, payload) => payload?.[0]?.payload?.fullName || ''}
               />
               <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                {allAgencies.map((agency, index) => (
-                  <Cell
-                    key={agency.ntd_id}
-                    fill={agency.ntd_id === homeAgency.ntd_id ? '#dc2626' : COLORS[(index + 1) % COLORS.length]}
-                  />
-                ))}
+                {allAgencies
+                  .map((agency) => {
+                    const record = filteredYearly.find(
+                      (fy) => fy.ntd_id === agency.ntd_id && fy.report_year === metadata.latest_year
+                    );
+                    return {
+                      ntd_id: agency.ntd_id,
+                      value: record ? getYearlyValue(record, selectedMetric) : 0,
+                    };
+                  })
+                  .sort((a, b) => b.value - a.value)
+                  .map((item) => (
+                    <Cell
+                      key={item.ntd_id}
+                      fill={agencyColorMap.get(item.ntd_id)!}
+                    />
+                  ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
