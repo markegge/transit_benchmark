@@ -15,10 +15,24 @@ interface Props {
 
 const INITIAL_FILTERS: Filters = {
   reporterTypes: [],
+  ftaPrograms: [],
   modes: [],
   states: [],
   searchQuery: '',
 };
+
+const FTA_PROGRAMS = [
+  { key: '5311', label: '5311 (Rural)', description: 'No UZA or population < 50,000' },
+  { key: '5307-small', label: '5307 Small Urban', description: 'UZA population 50,000–199,999' },
+  { key: '5307', label: '5307 (Urban)', description: 'UZA population 200,000+' },
+];
+
+function getAgencyFtaProgram(agency: Agency): string {
+  const pop = agency.primary_uza_population;
+  if (!pop || pop < 50000) return '5311';
+  if (pop < 200000) return '5307-small';
+  return '5307';
+}
 
 const SIMILARITY_CRITERIA: { key: SimilarityCriterion; label: string }[] = [
   { key: 'population', label: 'Population' },
@@ -156,6 +170,11 @@ export function FilterStep({
         return false;
       }
 
+      // FTA program filter (matches ANY)
+      if (filters.ftaPrograms.length > 0 && !filters.ftaPrograms.includes(getAgencyFtaProgram(agency))) {
+        return false;
+      }
+
       // Mode filter - agency must operate ALL selected modes
       if (filters.modes.length > 0) {
         const hasAllModes = filters.modes.every((m) => agency.modes.includes(m));
@@ -205,6 +224,15 @@ export function FilterStep({
       reporterTypes: prev.reporterTypes.includes(type)
         ? prev.reporterTypes.filter((t) => t !== type)
         : [...prev.reporterTypes, type],
+    }));
+  };
+
+  const toggleFtaProgram = (program: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      ftaPrograms: prev.ftaPrograms.includes(program)
+        ? prev.ftaPrograms.filter((p) => p !== program)
+        : [...prev.ftaPrograms, program],
     }));
   };
 
@@ -399,6 +427,22 @@ export function FilterStep({
             </div>
 
             <div className="filter-section">
+              <label>FTA Program (match any)</label>
+              <div className="filter-chips">
+                {FTA_PROGRAMS.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    className={filters.ftaPrograms.includes(key) ? 'active' : ''}
+                    onClick={() => toggleFtaProgram(key)}
+                    title={FTA_PROGRAMS.find((p) => p.key === key)?.description}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="filter-section">
               <label>Transit Modes (must operate ALL selected)</label>
               <div className="modes-dropdown-container" ref={modesDropdownRef}>
                 <button
@@ -532,9 +576,8 @@ export function FilterStep({
               )}
             </div>
           </div>
-          </div>{/* end results-column */}
 
-          {/* Selection Summary */}
+          {/* Selection Summary — inline in results column */}
           <div className="selection-panel">
             <h3>Selected Peers ({selectedPeerIds.size}/19)</h3>
             {selectedPeerIds.size === 0 ? (
@@ -560,6 +603,7 @@ export function FilterStep({
                 : `Compare ${selectedPeerIds.size + 1} Agencies`}
             </button>
           </div>
+          </div>{/* end results-column */}
         </div>
       )}
     </div>

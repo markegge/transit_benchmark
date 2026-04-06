@@ -104,6 +104,7 @@ export type SimilarityCriterion =
 
 export interface Filters {
   reporterTypes: string[];
+  ftaPrograms: string[];
   modes: string[];  // Matches agencies that operate ALL selected modes
   states: string[];
   searchQuery: string;
