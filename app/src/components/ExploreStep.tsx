@@ -21,11 +21,13 @@ import './ExploreStep.css';
 interface Props {
   homeAgency: Agency;
   peerAgencies: Agency[];
+  allAgencies: Agency[];
   agencyYearly: AgencyYearly[];
   agencyModeYearly: AgencyModeYearly[];
   metadata: Metadata;
   onBack: () => void;
   onStartOver: () => void;
+  onPeersChange: (peers: Agency[]) => void;
 }
 
 type MetricKey =
@@ -156,11 +158,13 @@ function formatMetricValue(value: number, metric: MetricKey): string {
 export function ExploreStep({
   homeAgency,
   peerAgencies,
+  allAgencies: allAgenciesPool,
   agencyYearly,
   agencyModeYearly,
   metadata,
   onBack,
   onStartOver,
+  onPeersChange,
 }: Props) {
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>('ridership');
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
@@ -168,6 +172,45 @@ export function ExploreStep({
   const [showSticThresholds, setShowSticThresholds] = useState(false);
   const [showSticInfo, setShowSticInfo] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [showPeerPanel, setShowPeerPanel] = useState(false);
+  const [labelMode, setLabelMode] = useState<'legend' | 'chart'>('legend');
+  const [displayNames, setDisplayNames] = useState<Map<number, string>>(new Map());
+  const [peerSearch, setPeerSearch] = useState('');
+
+  const getDisplayName = (agency: Agency) => displayNames.get(agency.ntd_id) || agency.agency;
+
+  const removePeer = (ntdId: number) => {
+    onPeersChange(peerAgencies.filter((p) => p.ntd_id !== ntdId));
+  };
+
+  const addPeer = (agency: Agency) => {
+    if (peerAgencies.length >= 19) return;
+    if (peerAgencies.some((p) => p.ntd_id === agency.ntd_id)) return;
+    onPeersChange([...peerAgencies, agency]);
+    setPeerSearch('');
+  };
+
+  const renamePeer = (ntdId: number, name: string) => {
+    setDisplayNames((prev) => {
+      const next = new Map(prev);
+      if (name.trim()) next.set(ntdId, name.trim());
+      else next.delete(ntdId);
+      return next;
+    });
+  };
+
+  const addableAgencies = useMemo(() => {
+    if (!peerSearch) return [];
+    const currentIds = new Set([homeAgency.ntd_id, ...peerAgencies.map((p) => p.ntd_id)]);
+    const query = peerSearch.toLowerCase();
+    return allAgenciesPool
+      .filter((a) => !currentIds.has(a.ntd_id) && (
+        a.agency.toLowerCase().includes(query) ||
+        a.city.toLowerCase().includes(query) ||
+        a.state.toLowerCase().includes(query)
+      ))
+      .slice(0, 20);
+  }, [peerSearch, allAgenciesPool, homeAgency, peerAgencies]);
 
   // All agencies = home + peers
   const allAgencies = useMemo(
@@ -255,7 +298,7 @@ export function ExploreStep({
     return Array.from(grouped.values());
   }, [agencyYearly, agencyModeYearly, agencyIds, selectedModes]);
 
-  // Trend chart data - pivot by year
+  // Trend chart data - pivot by year, using display names as keys
   const trendData = useMemo(() => {
     const years = metadata.years;
     return years.map((year) => {
@@ -265,20 +308,20 @@ export function ExploreStep({
           (fy) => fy.ntd_id === agency.ntd_id && fy.report_year === year
         );
         if (record) {
-          yearData[agency.agency] = getYearlyValue(record, selectedMetric);
+          yearData[getDisplayName(agency)] = getYearlyValue(record, selectedMetric);
         }
       });
       return yearData;
     });
-  }, [allAgencies, filteredYearly, selectedMetric, metadata.years]);
+  }, [allAgencies, filteredYearly, selectedMetric, metadata.years, displayNames]);
 
   // Generate CSV data for download
   const generateCSV = () => {
-    const headers = ['Year', ...allAgencies.map((a) => a.agency)];
+    const headers = ['Year', ...allAgencies.map((a) => getDisplayName(a))];
     const rows = trendData.map((row) => {
       return [
         row.year,
-        ...allAgencies.map((a) => row[a.agency] ?? ''),
+        ...allAgencies.map((a) => row[getDisplayName(a)] ?? ''),
       ].join(',');
     });
     return [headers.join(','), ...rows].join('\n');
@@ -298,12 +341,12 @@ export function ExploreStep({
   const truncateName = (name: string, maxLen = 35) =>
     name.length > maxLen ? name.slice(0, maxLen) + '...' : name;
 
-  // Build a lookup from agency name to agency object for legend tooltips
+  // Build a lookup from display name to agency object for legend tooltips
   const agencyByName = useMemo(() => {
     const map = new Map<string, Agency>();
-    allAgencies.forEach((a) => map.set(a.agency, a));
+    allAgencies.forEach((a) => map.set(getDisplayName(a), a));
     return map;
-  }, [allAgencies]);
+  }, [allAgencies, displayNames]);
 
   // Consistent color map: ntd_id → color, matching trend chart index order
   const agencyColorMap = useMemo(() => {
@@ -314,7 +357,7 @@ export function ExploreStep({
 
   // Custom legend formatter that bolds the home agency and adds hover tooltip
   const renderLegendText = (value: string) => {
-    const isHome = value === homeAgency.agency;
+    const isHome = value === getDisplayName(homeAgency);
     const displayName = truncateName(value);
     const agency = agencyByName.get(value);
     const tooltip = agency
@@ -361,6 +404,19 @@ export function ExploreStep({
         </div>
         <div className="header-buttons-right">
           <button
+            className={`peers-toggle-button${showPeerPanel ? ' active' : ''}`}
+            onClick={() => setShowPeerPanel((v) => !v)}
+          >
+            Peers ({peerAgencies.length})
+          </button>
+          <button
+            className={`label-toggle-button${labelMode === 'chart' ? ' active' : ''}`}
+            onClick={() => setLabelMode((m) => m === 'legend' ? 'chart' : 'legend')}
+            title={labelMode === 'legend' ? 'Show labels on chart' : 'Show legend'}
+          >
+            {labelMode === 'legend' ? 'Labels → Chart' : 'Labels → Legend'}
+          </button>
+          <button
             className="share-button"
             onClick={() => {
               navigator.clipboard.writeText(window.location.href).then(() => {
@@ -377,6 +433,53 @@ export function ExploreStep({
           </button>
         </div>
       </div>
+
+      {/* Peer management panel */}
+      {showPeerPanel && (
+        <div className="peer-management-panel">
+          <div className="peer-mgmt-header">
+            <h3>Manage Peers</h3>
+            <div className="peer-add-search">
+              <input
+                type="text"
+                placeholder="Search to add a peer..."
+                value={peerSearch}
+                onChange={(e) => setPeerSearch(e.target.value)}
+              />
+              {addableAgencies.length > 0 && (
+                <div className="peer-add-dropdown">
+                  {addableAgencies.map((a) => (
+                    <div key={a.ntd_id} className="peer-add-item" onClick={() => addPeer(a)}>
+                      <span className="peer-add-name">{a.agency}</span>
+                      <span className="peer-add-loc">{a.city}, {a.state}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="peer-mgmt-list">
+            {/* Home agency (not removable) */}
+            <div className="peer-mgmt-item home">
+              <span className="peer-color" style={{ background: agencyColorMap.get(homeAgency.ntd_id) }} />
+              <span className="peer-name-display">{getDisplayName(homeAgency)} (home)</span>
+            </div>
+            {peerAgencies.map((peer) => (
+              <div key={peer.ntd_id} className="peer-mgmt-item">
+                <span className="peer-color" style={{ background: agencyColorMap.get(peer.ntd_id) }} />
+                <input
+                  className="peer-rename-input"
+                  value={displayNames.get(peer.ntd_id) ?? peer.agency}
+                  onChange={(e) => renamePeer(peer.ntd_id, e.target.value)}
+                  title={peer.agency}
+                />
+                <span className="peer-loc">{peer.city}, {peer.state}</span>
+                <button className="peer-remove" onClick={() => removePeer(peer.ntd_id)} title="Remove peer">×</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="metric-selector">
         <span>Performance Measure:</span>
@@ -454,24 +557,45 @@ export function ExploreStep({
                     : [0, 'auto']
                 }
               />
-              <Legend formatter={renderLegendText} wrapperStyle={{ paddingTop: 20 }} />
+              {labelMode === 'legend' && (
+                <Legend formatter={renderLegendText} wrapperStyle={{ paddingTop: 20 }} />
+              )}
               {allAgencies.map((agency) => {
                 const isHome = agency.ntd_id === homeAgency.ntd_id;
                 const color = agencyColorMap.get(agency.ntd_id)!;
+                const name = getDisplayName(agency);
                 return (
                   <Line
                     key={agency.ntd_id}
                     type="monotone"
-                    dataKey={agency.agency}
+                    dataKey={name}
                     stroke={color}
                     strokeWidth={isHome ? 4 : 2}
                     dot={{ r: isHome ? 5 : 3, fill: color, strokeWidth: 0 }}
                     activeDot={{ r: isHome ? 8 : 5, fill: color, strokeWidth: 0 }}
                   >
                     <LabelList
-                      dataKey={agency.agency}
+                      dataKey={name}
                       position="top"
                       content={({ x, y, value, index: pointIndex }) => {
+                        if (labelMode === 'chart') {
+                          // Show name label on the last data point
+                          const lastYearIdx = trendData.length - 1;
+                          if (pointIndex !== lastYearIdx || value === undefined) return null;
+                          return (
+                            <text
+                              x={(x as number) + 5}
+                              y={y as number}
+                              fill={color}
+                              fontSize={10}
+                              textAnchor="start"
+                              fontWeight={isHome ? 700 : 400}
+                            >
+                              {truncateName(name, 20)}
+                            </text>
+                          );
+                        }
+                        // Default: show value on hover
                         const year = trendData[pointIndex as number]?.year;
                         if (year !== hoveredYear || value === undefined) return null;
                         return (

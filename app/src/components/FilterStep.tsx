@@ -8,6 +8,10 @@ interface Props {
   metadata: Metadata;
   initialHomeAgency: Agency | null;
   initialPeerIds: number[];
+  filters: Filters;
+  onFiltersChange: (filters: Filters) => void;
+  selectedCriteria: SimilarityCriterion[];
+  onSelectedCriteriaChange: (criteria: SimilarityCriterion[]) => void;
   onSelectAgencies: (homeAgency: Agency, peers: Agency[]) => void;
   onStartOver: () => void;
   onSetShowVideo: (show: boolean) => void;
@@ -100,16 +104,15 @@ export function FilterStep({
   metadata,
   initialHomeAgency,
   initialPeerIds,
+  filters,
+  onFiltersChange: setFilters,
+  selectedCriteria,
+  onSelectedCriteriaChange: setSelectedCriteria,
   onSelectAgencies,
   onStartOver,
   onSetShowVideo,
 }: Props) {
   const [homeAgency, setHomeAgency] = useState<Agency | null>(initialHomeAgency);
-  const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS);
-  const [selectedCriteria, setSelectedCriteria] = useState<SimilarityCriterion[]>([
-    'population',
-    'ridership',
-  ]);
   const [selectedPeerIds, setSelectedPeerIds] = useState<Set<number>>(
     new Set(initialPeerIds)
   );
@@ -219,46 +222,46 @@ export function FilterStep({
   }, [filteredAgencies, homeAgency, selectedCriteria, normalizedValues]);
 
   const toggleReporterType = (type: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      reporterTypes: prev.reporterTypes.includes(type)
-        ? prev.reporterTypes.filter((t) => t !== type)
-        : [...prev.reporterTypes, type],
-    }));
+    setFilters({
+      ...filters,
+      reporterTypes: filters.reporterTypes.includes(type)
+        ? filters.reporterTypes.filter((t) => t !== type)
+        : [...filters.reporterTypes, type],
+    });
   };
 
   const toggleFtaProgram = (program: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      ftaPrograms: prev.ftaPrograms.includes(program)
-        ? prev.ftaPrograms.filter((p) => p !== program)
-        : [...prev.ftaPrograms, program],
-    }));
+    setFilters({
+      ...filters,
+      ftaPrograms: filters.ftaPrograms.includes(program)
+        ? filters.ftaPrograms.filter((p) => p !== program)
+        : [...filters.ftaPrograms, program],
+    });
   };
 
   const toggleMode = (mode: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      modes: prev.modes.includes(mode)
-        ? prev.modes.filter((m) => m !== mode)
-        : [...prev.modes, mode],
-    }));
+    setFilters({
+      ...filters,
+      modes: filters.modes.includes(mode)
+        ? filters.modes.filter((m) => m !== mode)
+        : [...filters.modes, mode],
+    });
   };
 
   const toggleState = (state: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      states: prev.states.includes(state)
-        ? prev.states.filter((s) => s !== state)
-        : [...prev.states, state],
-    }));
+    setFilters({
+      ...filters,
+      states: filters.states.includes(state)
+        ? filters.states.filter((s) => s !== state)
+        : [...filters.states, state],
+    });
   };
 
   const toggleCriterion = (criterion: SimilarityCriterion) => {
-    setSelectedCriteria((prev) =>
-      prev.includes(criterion)
-        ? prev.filter((c) => c !== criterion)
-        : [...prev, criterion]
+    setSelectedCriteria(
+      selectedCriteria.includes(criterion)
+        ? selectedCriteria.filter((c) => c !== criterion)
+        : [...selectedCriteria, criterion]
     );
   };
 
@@ -515,7 +518,7 @@ export function FilterStep({
                   className="peer-search-input"
                   placeholder="Search..."
                   value={filters.searchQuery}
-                  onChange={(e) => setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))}
+                  onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
                 />
                 <button onClick={() => selectTopN(5)}>Select Top 5</button>
                 <button onClick={() => selectTopN(10)}>Select Top 10</button>

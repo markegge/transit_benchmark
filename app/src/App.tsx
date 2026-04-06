@@ -7,7 +7,7 @@ import {
   loadAgencyYearly,
   loadAgencyModeYearly,
 } from './data';
-import type { Metadata, Agency, AgencyYearly, AgencyModeYearly } from './types';
+import type { Metadata, Agency, AgencyYearly, AgencyModeYearly, Filters, SimilarityCriterion } from './types';
 import './App.css';
 
 type Step = 'filter' | 'explore';
@@ -146,6 +146,17 @@ function App() {
   const [filterKey, setFilterKey] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
+  const [filters, setFilters] = useState<Filters>({
+    reporterTypes: [],
+    ftaPrograms: [],
+    modes: [],
+    states: [],
+    searchQuery: '',
+  });
+  const [selectedCriteria, setSelectedCriteria] = useState<SimilarityCriterion[]>([
+    'population',
+    'ridership',
+  ]);
 
   // Restore from URL params (shareable links) or cookies after agencies are loaded
   useEffect(() => {
@@ -221,6 +232,8 @@ function App() {
     setPeerAgencies([]);
     setStep('filter');
     setFilterKey((k) => k + 1);
+    setFilters({ reporterTypes: [], ftaPrograms: [], modes: [], states: [], searchQuery: '' });
+    setSelectedCriteria(['population', 'ridership']);
     deleteCookie(COOKIE_HOME_AGENCY);
     deleteCookie(COOKIE_PEER_AGENCIES);
     clearUrlParams();
@@ -284,6 +297,10 @@ function App() {
             metadata={metadata}
             initialHomeAgency={homeAgency}
             initialPeerIds={peerAgencies.map((p) => p.ntd_id)}
+            filters={filters}
+            onFiltersChange={setFilters}
+            selectedCriteria={selectedCriteria}
+            onSelectedCriteriaChange={setSelectedCriteria}
             onSelectAgencies={handleSelectAgencies}
             onStartOver={handleStartOver}
             onSetShowVideo={setShowVideo}
@@ -292,11 +309,13 @@ function App() {
           <ExploreStep
             homeAgency={homeAgency}
             peerAgencies={peerAgencies}
+            allAgencies={agencies}
             agencyYearly={agencyYearly}
             agencyModeYearly={agencyModeYearly}
             metadata={metadata}
             onBack={handleBack}
             onStartOver={handleStartOver}
+            onPeersChange={setPeerAgencies}
           />
         ) : null}
       </main>
