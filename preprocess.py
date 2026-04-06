@@ -6,6 +6,65 @@ from pathlib import Path
 import pandas as pd
 
 
+def load_census_population() -> dict[tuple[str, str], int]:
+    """Load Census Bureau place population estimates and return a lookup by (city, state).
+
+    Uses 2023 Annual Estimates of Resident Population for cities/places.
+    """
+    census_path = Path("metrics/census_places_2023.csv")
+    if not census_path.exists():
+        print("Census places file not found, skipping city population lookup")
+        return {}
+
+    df = pd.read_csv(census_path, encoding="latin-1")
+
+    # Filter to places (SUMLEV 162 = incorporated places, 170 = consolidated cities)
+    places = df[df["SUMLEV"].isin([162, 170])].copy()
+
+    # Clean city names: remove suffixes like " city", " town", " village", " CDP"
+    places["city_clean"] = (
+        places["NAME"]
+        .str.replace(r"\s+(city|town|village|CDP|borough|municipality)$", "", regex=True, case=False)
+        .str.strip()
+        .str.lower()
+    )
+    places["state_abbr"] = places["STNAME"]
+
+    # Build state name to abbreviation mapping
+    state_abbrevs = {
+        "Alabama": "AL", "Alaska": "AK", "Arizona": "AZ", "Arkansas": "AR",
+        "California": "CA", "Colorado": "CO", "Connecticut": "CT", "Delaware": "DE",
+        "Florida": "FL", "Georgia": "GA", "Hawaii": "HI", "Idaho": "ID",
+        "Illinois": "IL", "Indiana": "IN", "Iowa": "IA", "Kansas": "KS",
+        "Kentucky": "KY", "Louisiana": "LA", "Maine": "ME", "Maryland": "MD",
+        "Massachusetts": "MA", "Michigan": "MI", "Minnesota": "MN", "Mississippi": "MS",
+        "Missouri": "MO", "Montana": "MT", "Nebraska": "NE", "Nevada": "NV",
+        "New Hampshire": "NH", "New Jersey": "NJ", "New Mexico": "NM", "New York": "NY",
+        "North Carolina": "NC", "North Dakota": "ND", "Ohio": "OH", "Oklahoma": "OK",
+        "Oregon": "OR", "Pennsylvania": "PA", "Rhode Island": "RI",
+        "South Carolina": "SC", "South Dakota": "SD", "Tennessee": "TN", "Texas": "TX",
+        "Utah": "UT", "Vermont": "VT", "Virginia": "VA", "Washington": "WA",
+        "West Virginia": "WV", "Wisconsin": "WI", "Wyoming": "WY",
+        "District of Columbia": "DC", "Puerto Rico": "PR",
+    }
+
+    lookup: dict[tuple[str, str], int] = {}
+    for _, row in places.iterrows():
+        state = state_abbrevs.get(row["STNAME"])
+        if not state:
+            continue
+        city = row["city_clean"]
+        pop = int(row["POPESTIMATE2023"]) if pd.notna(row["POPESTIMATE2023"]) else 0
+        if pop > 0:
+            key = (city, state)
+            # Keep the largest population if multiple places match
+            if key not in lookup or pop > lookup[key]:
+                lookup[key] = pop
+
+    print(f"Census population lookup: {len(lookup)} cities loaded")
+    return lookup
+
+
 def impute_population(df: pd.DataFrame) -> pd.DataFrame:
     """Impute missing population data using available values from other years.
 
@@ -188,6 +247,20 @@ def main():
     # Impute missing population data from other years
     # Many agencies have population in 2022-2024 but zero/null in 2019-2021
     combined = impute_population(combined)
+
+    # Fill remaining missing populations using Census city population data
+    census_pop = load_census_population()
+    if census_pop:
+        filled = 0
+        for idx, row in combined.iterrows():
+            if pd.notna(row["primary_uza_population"]) and row["primary_uza_population"] > 0:
+                continue
+            city = str(row.get("city", "")).strip().lower()
+            state = str(row.get("state", "")).strip().upper()
+            if (city, state) in census_pop:
+                combined.at[idx, "primary_uza_population"] = census_pop[(city, state)]
+                filled += 1
+        print(f"Census city population fill: {filled} values filled")
 
     # Create output directory
     output_dir = Path("app/public/data")
