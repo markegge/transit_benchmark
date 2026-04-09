@@ -100,7 +100,7 @@ function HelpModal({ onClose, onPlayVideo }: { onClose: () => void; onPlayVideo:
           <hr className="help-modal-divider" />
           <h3>Transit Tools Suite</h3>
           <div className="transit-tools-section">
-            <p>Transit Peers is part of the <strong>Transit Tools</strong> suite. Also available: <a href="https://www.transitfeeds.net" target="_blank" rel="noopener noreferrer">GTFS Builder</a> — a browser-based editor for creating and editing GTFS transit feeds.</p>
+            <p>Transit Peers is part of the <strong>Transit Tools</strong> suite. Also available: <a href="https://www.gtfsbuilder.net" target="_blank" rel="noopener noreferrer">GTFS Builder</a> — a browser-based editor for creating and editing GTFS transit feeds.</p>
           </div>
         </div>
       </div>
