@@ -13,6 +13,7 @@ import {
   Cell,
   LabelList,
   ReferenceLine,
+  Customized,
 } from 'recharts';
 import type { Agency, AgencyYearly, AgencyModeYearly, Metadata } from '../types';
 import { formatNumber, formatCurrency, formatPercent } from '../data';
@@ -410,13 +411,6 @@ export function ExploreStep({
             Peers ({peerAgencies.length})
           </button>
           <button
-            className={`label-toggle-button${labelMode === 'chart' ? ' active' : ''}`}
-            onClick={() => setLabelMode((m) => m === 'legend' ? 'chart' : 'legend')}
-            title={labelMode === 'legend' ? 'Show labels on chart' : 'Show legend'}
-          >
-            {labelMode === 'legend' ? 'Labels → Chart' : 'Labels → Legend'}
-          </button>
-          <button
             className="share-button"
             onClick={() => {
               navigator.clipboard.writeText(window.location.href).then(() => {
@@ -535,11 +529,29 @@ export function ExploreStep({
       <div className="charts-grid">
         {/* Trend Line Chart - Main visualization */}
         <div className="chart-card chart-card-full">
-          <h3>{metricLabel} Over Time</h3>
+          <div className="chart-header-with-actions">
+            <h3>{metricLabel} Over Time</h3>
+            <div className="label-toggle-segmented" role="group" aria-label="Label display mode">
+              <button
+                className={labelMode === 'legend' ? 'active' : ''}
+                onClick={() => setLabelMode('legend')}
+                aria-pressed={labelMode === 'legend'}
+              >
+                Legend
+              </button>
+              <button
+                className={labelMode === 'chart' ? 'active' : ''}
+                onClick={() => setLabelMode('chart')}
+                aria-pressed={labelMode === 'chart'}
+              >
+                Labels on chart
+              </button>
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={sticLineActive ? 583 : 563}>
             <LineChart
               data={trendData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              margin={{ top: 20, right: labelMode === 'chart' ? 140 : 30, left: 20, bottom: 60 }}
               onMouseMove={(state: { activeLabel?: string | number }) => {
                 if (state?.activeLabel) {
                   setHoveredYear(Number(state.activeLabel));
@@ -578,24 +590,7 @@ export function ExploreStep({
                       dataKey={name}
                       position="top"
                       content={({ x, y, value, index: pointIndex }) => {
-                        if (labelMode === 'chart') {
-                          // Show name label on the last data point
-                          const lastYearIdx = trendData.length - 1;
-                          if (pointIndex !== lastYearIdx || value === undefined) return null;
-                          return (
-                            <text
-                              x={(x as number) + 5}
-                              y={y as number}
-                              fill={color}
-                              fontSize={10}
-                              textAnchor="start"
-                              fontWeight={isHome ? 700 : 400}
-                            >
-                              {truncateName(name, 20)}
-                            </text>
-                          );
-                        }
-                        // Default: show value on hover
+                        // Hover-only value label (both modes)
                         const year = trendData[pointIndex as number]?.year;
                         if (year !== hoveredYear || value === undefined) return null;
                         return (
@@ -614,6 +609,78 @@ export function ExploreStep({
                   </Line>
                 );
               })}
+              {/* End-of-line labels with anti-collision. Rendered in a single
+                  pass so we can space overlapping labels apart, and so they
+                  can extend past the plot area (the LineChart's right margin
+                  above is widened in chart mode to make room). */}
+              {labelMode === 'chart' && (
+                <Customized
+                  component={(props: unknown) => {
+                    const { xAxisMap, yAxisMap } = props as {
+                      xAxisMap?: Record<string, { scale: (v: number | string) => number }>;
+                      yAxisMap?: Record<string, { scale: (v: number | string) => number }>;
+                    };
+                    if (!xAxisMap || !yAxisMap || trendData.length === 0) return null;
+                    const xScale = Object.values(xAxisMap)[0]?.scale;
+                    const yScale = Object.values(yAxisMap)[0]?.scale;
+                    if (!xScale || !yScale) return null;
+
+                    const lastRow = trendData[trendData.length - 1];
+                    const xPos = xScale(lastRow.year) as number;
+
+                    type EndLabel = {
+                      ntdId: number;
+                      name: string;
+                      y: number;
+                      color: string;
+                      isHome: boolean;
+                    };
+                    const labels: EndLabel[] = [];
+                    for (const agency of allAgencies) {
+                      const name = getDisplayName(agency);
+                      const raw = (lastRow as Record<string, unknown>)[name];
+                      if (raw === undefined || raw === null) continue;
+                      const y = yScale(Number(raw)) as number;
+                      if (!Number.isFinite(y)) continue;
+                      labels.push({
+                        ntdId: agency.ntd_id,
+                        name,
+                        y,
+                        color: agencyColorMap.get(agency.ntd_id) || '#888',
+                        isHome: agency.ntd_id === homeAgency.ntd_id,
+                      });
+                    }
+
+                    // Anti-collision: sort by y ascending, then enforce a
+                    // minimum vertical gap between consecutive labels.
+                    labels.sort((a, b) => a.y - b.y);
+                    const MIN_GAP = 14;
+                    for (let i = 1; i < labels.length; i++) {
+                      const gap = labels[i].y - labels[i - 1].y;
+                      if (gap < MIN_GAP) labels[i].y = labels[i - 1].y + MIN_GAP;
+                    }
+
+                    return (
+                      <g pointerEvents="none">
+                        {labels.map((l) => (
+                          <text
+                            key={l.ntdId}
+                            x={xPos + 8}
+                            y={l.y}
+                            fill={l.color}
+                            fontSize={11}
+                            textAnchor="start"
+                            dominantBaseline="middle"
+                            fontWeight={l.isHome ? 700 : 500}
+                          >
+                            {truncateName(l.name, 18)}
+                          </text>
+                        ))}
+                      </g>
+                    );
+                  }}
+                />
+              )}
               {sticLineActive && sticThreshold !== undefined && (
                 <ReferenceLine
                   y={sticThreshold}

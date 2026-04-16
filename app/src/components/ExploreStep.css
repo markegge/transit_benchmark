@@ -648,6 +648,39 @@
   border-color: var(--color-teal);
 }
 
+/* Segmented toggle next to a chart header (Legend ↔ Labels on chart) */
+.label-toggle-segmented {
+  display: inline-flex;
+  border: 1px solid var(--color-sand);
+  border-radius: 6px;
+  overflow: hidden;
+  background: white;
+}
+
+.label-toggle-segmented button {
+  padding: 0.375rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--color-brown);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.label-toggle-segmented button + button {
+  border-left: 1px solid var(--color-sand);
+}
+
+.label-toggle-segmented button:hover:not(.active) {
+  color: var(--color-teal);
+}
+
+.label-toggle-segmented button.active {
+  background: var(--color-teal);
+  color: white;
+}
+
 .peer-management-panel {
   background: white;
   border-radius: 10px;
