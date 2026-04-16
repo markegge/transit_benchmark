@@ -40,6 +40,12 @@ export interface Agency {
   farebox_recovery: number | null;
   trips_per_hour: number | null;
   rides_per_capita: number | null;
+  // 2024 NTD Agency Information snapshot. NULL for agencies that don't
+  // report these fields (mostly Rural General Public Transit, Tribes,
+  // Reduced Reporters).
+  service_area_sq_miles: number | null;
+  service_area_pop: number | null;
+  service_area_density: number | null;
 }
 
 export interface AgencyYearly {
@@ -100,7 +106,9 @@ export type SimilarityCriterion =
   | 'operating_expenses'
   | 'vehicle_revenue_hours'
   | 'vehicle_revenue_miles'
-  | 'rides_per_capita';
+  | 'rides_per_capita'
+  | 'service_area_sq_miles'
+  | 'service_area_density';
 
 export interface Filters {
   reporterTypes: string[];

@@ -47,10 +47,15 @@ const SIMILARITY_CRITERIA: { key: SimilarityCriterion; label: string }[] = [
   { key: 'vehicle_revenue_hours', label: 'Vehicle Revenue Hours' },
   { key: 'vehicle_revenue_miles', label: 'Vehicle Revenue Miles' },
   { key: 'rides_per_capita', label: 'Rides per Capita' },
+  { key: 'service_area_sq_miles', label: 'Service Area (sq mi)' },
+  { key: 'service_area_density', label: 'Service Area Density (pop/sq mi)' },
 ];
 
-// Get raw value for a criterion
-function getCriterionValue(agency: Agency, criterion: SimilarityCriterion): number {
+// Raw value for a criterion. Returns null when the agency doesn't have
+// the underlying field (e.g. service-area data for Rural / Reduced
+// Reporters); the similarity calc then excludes that agency-criterion
+// pair rather than treating it as "0, i.e. most similar to smallest."
+function getCriterionValue(agency: Agency, criterion: SimilarityCriterion): number | null {
   switch (criterion) {
     case 'population':
       return agency.primary_uza_population ?? 0;
@@ -68,20 +73,33 @@ function getCriterionValue(agency: Agency, criterion: SimilarityCriterion): numb
       return agency.vehicle_revenue_miles;
     case 'rides_per_capita':
       return agency.rides_per_capita ?? 0;
+    case 'service_area_sq_miles':
+      return agency.service_area_sq_miles;
+    case 'service_area_density':
+      return agency.service_area_density;
   }
 }
 
-// Log transform and normalize values to 0-1 scale
-function normalizeValues(values: number[]): number[] {
-  // Log transform (add 1 to handle zeros)
-  const logValues = values.map((v) => Math.log(v + 1));
+// Log transform and normalize the non-null values to a 0-1 scale. Agencies
+// whose value for this criterion is null (missing) are omitted from the
+// returned map — the similarity calc then skips them for this criterion.
+function normalizeValues(
+  values: Array<{ id: number; value: number | null }>
+): Map<number, number> {
+  const valid = values.filter((v): v is { id: number; value: number } => v.value !== null);
+  if (valid.length === 0) return new Map();
+  const logValues = valid.map((v) => Math.log(v.value + 1));
   const min = Math.min(...logValues);
   const max = Math.max(...logValues);
   const range = max - min || 1;
-  return logValues.map((v) => (v - min) / range);
+  const map = new Map<number, number>();
+  valid.forEach((v, i) => map.set(v.id, (logValues[i] - min) / range));
+  return map;
 }
 
-// Calculate similarity score (lower = more similar)
+// Calculate similarity score (lower = more similar). If either agency is
+// missing data for a criterion, that criterion is skipped for the pair —
+// we don't want a missing service-area field to look like "identical".
 function calculateSimilarity(
   homeAgency: Agency,
   otherAgency: Agency,
@@ -91,12 +109,20 @@ function calculateSimilarity(
   if (criteria.length === 0) return 0;
 
   let totalDiff = 0;
+  let usedCount = 0;
   for (const criterion of criteria) {
-    const homeNorm = normalizedValues.get(criterion)?.get(homeAgency.ntd_id) ?? 0;
-    const otherNorm = normalizedValues.get(criterion)?.get(otherAgency.ntd_id) ?? 0;
+    const map = normalizedValues.get(criterion);
+    const homeNorm = map?.get(homeAgency.ntd_id);
+    const otherNorm = map?.get(otherAgency.ntd_id);
+    if (homeNorm === undefined || otherNorm === undefined) continue;
     totalDiff += Math.abs(homeNorm - otherNorm);
+    usedCount += 1;
   }
-  return totalDiff;
+  // Scale so ranks stay comparable across agencies even when some criteria
+  // are excluded (e.g., peer missing service area). If nothing was usable
+  // for this pair, push it to the bottom.
+  if (usedCount === 0) return Number.POSITIVE_INFINITY;
+  return (totalDiff * criteria.length) / usedCount;
 }
 
 export function FilterStep({
@@ -198,11 +224,11 @@ export function FilterStep({
     const result = new Map<SimilarityCriterion, Map<number, number>>();
 
     for (const { key } of SIMILARITY_CRITERIA) {
-      const values = agencies.map((a) => getCriterionValue(a, key));
-      const normalized = normalizeValues(values);
-      const valueMap = new Map<number, number>();
-      agencies.forEach((a, i) => valueMap.set(a.ntd_id, normalized[i]));
-      result.set(key, valueMap);
+      const pairs = agencies.map((a) => ({
+        id: a.ntd_id,
+        value: getCriterionValue(a, key),
+      }));
+      result.set(key, normalizeValues(pairs));
     }
 
     return result;
@@ -299,6 +325,7 @@ export function FilterStep({
 
   const formatCriterionValue = (agency: Agency, criterion: SimilarityCriterion): string => {
     const value = getCriterionValue(agency, criterion);
+    if (value === null) return '—';
     switch (criterion) {
       case 'fare_per_trip':
       case 'cost_per_trip':
@@ -306,6 +333,8 @@ export function FilterStep({
         return formatCurrency(value);
       case 'rides_per_capita':
         return value.toFixed(1);
+      case 'service_area_density':
+        return formatNumber(Math.round(value));
       default:
         return formatNumber(value);
     }

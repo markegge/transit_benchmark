@@ -65,6 +65,39 @@ def load_census_population() -> dict[tuple[str, str], int]:
     return lookup
 
 
+def load_service_area() -> pd.DataFrame:
+    """Load the NTD service area (sq mi + population) lookup.
+
+    Source: data.transportation.gov resource ccvf-fykn ("NTD Reporter Map"),
+    which is a tabular subset of the 2024 Annual Database Agency Information.
+    Static snapshot — service areas are self-reported and change rarely, so
+    we re-fetch annually rather than per report year. Many agencies (Rural
+    General Public Transit, Tribes, Reduced Reporters) do not report these
+    fields; those rows stay NaN and downstream similarity ranking treats
+    missing values as "excluded from this criterion."
+    """
+    path = Path("metrics/service_area_2024.csv")
+    if not path.exists():
+        print("Service area file not found, skipping service-area merge")
+        return pd.DataFrame(columns=["ntd_id", "service_area_sq_miles", "service_area_pop"])
+
+    df = pd.read_csv(path)
+    df["ntd_id"] = pd.to_numeric(df["ntd_id"], errors="coerce").astype("Int64")
+    df["service_area_sq_miles"] = pd.to_numeric(df["service_area_sq_miles"], errors="coerce")
+    df["service_area_pop"] = pd.to_numeric(df["service_area_pop"], errors="coerce")
+    # Drop rows where either field is missing / zero — density can't be
+    # computed from either and we'd rather expose nulls than artifacts.
+    df = df[
+        df["service_area_sq_miles"].notna()
+        & (df["service_area_sq_miles"] > 0)
+        & df["service_area_pop"].notna()
+        & (df["service_area_pop"] > 0)
+    ].copy()
+    df["service_area_density"] = (df["service_area_pop"] / df["service_area_sq_miles"]).round(1)
+    print(f"Service area lookup: {len(df)} agencies with reported sq mi + population")
+    return df[["ntd_id", "service_area_sq_miles", "service_area_pop", "service_area_density"]]
+
+
 def impute_population(df: pd.DataFrame) -> pd.DataFrame:
     """Impute missing population data using available values from other years.
 
@@ -316,6 +349,13 @@ def main():
     agency_list["rides_per_capita"] = (
         agency_list["unlinked_passenger_trips"] / agency_list["primary_uza_population"]
     ).round(2)
+
+    # Merge service-area snapshot (2024). Agencies that don't report these
+    # fields get NaN; the frontend treats nulls as "ineligible for this
+    # similarity criterion" rather than substituting zero.
+    service_area = load_service_area()
+    if not service_area.empty:
+        agency_list = agency_list.merge(service_area, on="ntd_id", how="left")
 
     # Filter out agencies without ridership data (per requirements)
     before_filter = len(agency_list)
