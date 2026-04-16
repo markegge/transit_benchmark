@@ -640,7 +640,13 @@ export function ExploreStep({
           <ResponsiveContainer width="100%" height={sticLineActive ? 583 : 563}>
             <LineChart
               data={trendData}
-              margin={{ top: 20, right: labelMode === 'chart' ? 140 : 30, left: 20, bottom: 60 }}
+              // Keep the right margin constant across label modes. Resizing
+              // the plot area on toggle caused labels to render against the
+              // pre-resize plot area on the first frame, so they'd briefly
+              // land in the wrong place before the chart re-layout caught up.
+              // A fixed 140px reserve is fine because the legend sits below
+              // the chart and doesn't need the horizontal space anyway.
+              margin={{ top: 20, right: 140, left: 20, bottom: 60 }}
               onMouseMove={(state: { activeLabel?: string | number }) => {
                 if (state?.activeLabel) {
                   setHoveredYear(Number(state.activeLabel));
