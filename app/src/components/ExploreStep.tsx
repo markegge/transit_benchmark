@@ -14,6 +14,8 @@ import {
   LabelList,
   ReferenceLine,
   Customized,
+  usePlotArea,
+  useYAxisDomain,
 } from 'recharts';
 import type { Agency, AgencyYearly, AgencyModeYearly, Metadata } from '../types';
 import { formatNumber, formatCurrency, formatPercent } from '../data';
@@ -45,6 +47,93 @@ type MetricKey =
   | 'pmt_per_vrm'
   | 'pmt_per_vrh'
   | 'pmt_per_capita';
+
+/**
+ * End-of-line labels rendered inside a <Customized> slot. Uses Recharts v3's
+ * useXAxis / useYAxis hooks to read the live scales so we can place each
+ * label precisely past the last data point, then runs a one-pass downward
+ * sweep to enforce a minimum vertical gap between labels (anti-collision).
+ */
+function EndOfLineLabels(props: {
+  trendData: Array<Record<string, number | string>>;
+  agencies: Agency[];
+  homeNtdId: number;
+  agencyColorMap: Map<number, string>;
+  getDisplayName: (a: Agency) => string;
+  truncateName: (name: string, maxLen?: number) => string;
+}) {
+  const { trendData, agencies, homeNtdId, agencyColorMap, getDisplayName, truncateName } = props;
+  const plotArea = usePlotArea();
+  const yDomain = useYAxisDomain(0);
+  if (!plotArea || !yDomain || trendData.length === 0) return null;
+
+  // yDomain comes from Recharts as [min, max] (numbers for a linear axis).
+  // Guard against the categorical / string-array variant just in case.
+  const yMin = typeof yDomain[0] === 'number' ? yDomain[0] : Number(yDomain[0]);
+  const yMax = typeof yDomain[1] === 'number' ? yDomain[1] : Number(yDomain[1]);
+  if (!Number.isFinite(yMin) || !Number.isFinite(yMax) || yMax === yMin) return null;
+
+  const plotTop = plotArea.y;
+  const plotBottom = plotArea.y + plotArea.height;
+  const plotRight = plotArea.x + plotArea.width;
+
+  // Map data value → SVG y pixel (SVG y grows downward, so invert).
+  const valueToY = (v: number) =>
+    plotBottom - ((v - yMin) / (yMax - yMin)) * (plotBottom - plotTop);
+
+  const lastRow = trendData[trendData.length - 1];
+
+  type EndLabel = {
+    ntdId: number;
+    name: string;
+    y: number;
+    color: string;
+    isHome: boolean;
+  };
+  const labels: EndLabel[] = [];
+  for (const agency of agencies) {
+    const name = getDisplayName(agency);
+    const raw = (lastRow as Record<string, unknown>)[name];
+    if (raw === undefined || raw === null) continue;
+    const numericValue = Number(raw);
+    if (!Number.isFinite(numericValue)) continue;
+    const y = valueToY(numericValue);
+    if (!Number.isFinite(y)) continue;
+    labels.push({
+      ntdId: agency.ntd_id,
+      name,
+      y,
+      color: agencyColorMap.get(agency.ntd_id) || '#888',
+      isHome: agency.ntd_id === homeNtdId,
+    });
+  }
+
+  labels.sort((a, b) => a.y - b.y);
+  const MIN_GAP = 14;
+  for (let i = 1; i < labels.length; i++) {
+    const gap = labels[i].y - labels[i - 1].y;
+    if (gap < MIN_GAP) labels[i].y = labels[i - 1].y + MIN_GAP;
+  }
+
+  return (
+    <g pointerEvents="none">
+      {labels.map((l) => (
+        <text
+          key={l.ntdId}
+          x={plotRight + 8}
+          y={l.y}
+          fill={l.color}
+          fontSize={11}
+          textAnchor="start"
+          dominantBaseline="middle"
+          fontWeight={l.isHome ? 700 : 500}
+        >
+          {truncateName(l.name, 18)}
+        </text>
+      ))}
+    </g>
+  );
+}
 
 const METRICS: { key: MetricKey; label: string }[] = [
   { key: 'ridership', label: 'Ridership' },
@@ -615,70 +704,16 @@ export function ExploreStep({
                   above is widened in chart mode to make room). */}
               {labelMode === 'chart' && (
                 <Customized
-                  component={(props: unknown) => {
-                    const { xAxisMap, yAxisMap } = props as {
-                      xAxisMap?: Record<string, { scale: (v: number | string) => number }>;
-                      yAxisMap?: Record<string, { scale: (v: number | string) => number }>;
-                    };
-                    if (!xAxisMap || !yAxisMap || trendData.length === 0) return null;
-                    const xScale = Object.values(xAxisMap)[0]?.scale;
-                    const yScale = Object.values(yAxisMap)[0]?.scale;
-                    if (!xScale || !yScale) return null;
-
-                    const lastRow = trendData[trendData.length - 1];
-                    const xPos = xScale(lastRow.year) as number;
-
-                    type EndLabel = {
-                      ntdId: number;
-                      name: string;
-                      y: number;
-                      color: string;
-                      isHome: boolean;
-                    };
-                    const labels: EndLabel[] = [];
-                    for (const agency of allAgencies) {
-                      const name = getDisplayName(agency);
-                      const raw = (lastRow as Record<string, unknown>)[name];
-                      if (raw === undefined || raw === null) continue;
-                      const y = yScale(Number(raw)) as number;
-                      if (!Number.isFinite(y)) continue;
-                      labels.push({
-                        ntdId: agency.ntd_id,
-                        name,
-                        y,
-                        color: agencyColorMap.get(agency.ntd_id) || '#888',
-                        isHome: agency.ntd_id === homeAgency.ntd_id,
-                      });
-                    }
-
-                    // Anti-collision: sort by y ascending, then enforce a
-                    // minimum vertical gap between consecutive labels.
-                    labels.sort((a, b) => a.y - b.y);
-                    const MIN_GAP = 14;
-                    for (let i = 1; i < labels.length; i++) {
-                      const gap = labels[i].y - labels[i - 1].y;
-                      if (gap < MIN_GAP) labels[i].y = labels[i - 1].y + MIN_GAP;
-                    }
-
-                    return (
-                      <g pointerEvents="none">
-                        {labels.map((l) => (
-                          <text
-                            key={l.ntdId}
-                            x={xPos + 8}
-                            y={l.y}
-                            fill={l.color}
-                            fontSize={11}
-                            textAnchor="start"
-                            dominantBaseline="middle"
-                            fontWeight={l.isHome ? 700 : 500}
-                          >
-                            {truncateName(l.name, 18)}
-                          </text>
-                        ))}
-                      </g>
-                    );
-                  }}
+                  component={
+                    <EndOfLineLabels
+                      trendData={trendData}
+                      agencies={allAgencies}
+                      homeNtdId={homeAgency.ntd_id}
+                      agencyColorMap={agencyColorMap}
+                      getDisplayName={getDisplayName}
+                      truncateName={truncateName}
+                    />
+                  }
                 />
               )}
               {sticLineActive && sticThreshold !== undefined && (
